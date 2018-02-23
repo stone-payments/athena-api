@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="athena-router-test" type="PythonConfigurationType" factoryName="Python">
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="FLASK_APP" value="run" />
+      <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="APP_SETTINGS" value="development" />
+      <env name="MONGODB_URL" value="172.19.100.11" />
+      <env name="DB_NAME" value="Athena" />
+      <env name="MONGODB_USER" value="AthenaAppUser" />
+      <env name="SECRET" value="asdasdsadsadsadasdsadasdasdsa" />
+      <env name="MONGODB_PASS" value="qn5lw*2v#iDk" />
+    </envs>
+    <option name="SDK_HOME" value="$USER_HOME$/flask/bin/python" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <module name="athena-router" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test.py" />
+    <option name="PARAMETERS" value="" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <method />
+  </configuration>
+</component>
