@@ -1,0 +1,80 @@
+Subject: 'Add changelog'
+Description: 'Add changelog'
+RequesterEmail: 'opensource@stone.com.br'
+
+# (Opcional, calculado com base nas respostas dos campos
+#adicionais)
+#Possível impacto da mudança:
+#   Low = 1,
+#   Medium = 2,
+#   High = 3,
+Impact: 'Low'
+
+# (Opcional, calculado com base nas respostas dos campos
+#adicionais)
+# Risco de aplicação da mudança:
+#   Low = 1,
+#   Medium = 2,
+#   High = 3,
+#   VeryHigh = 4,
+Risk: 'Low'
+
+# Prioridade de execução da mudança:
+#   Low = 1,
+#   Medium = 2,
+#   High = 3,
+#   VeryHigh = 4,
+Priority: 'low'
+
+# Tipo de mudança:
+#   Minor = 1,
+#   Standard = 2,
+#   Major = 3,
+#   Emergency = 4,
+ChangeType: 'Minor'
+
+#Janela de deploy (opcional):
+# Os campos de data/hora para execução do deploy passam a ser opcionais,
+# quando não informados o deploy é executado logo após a aprovação.
+
+# Data prevista de inicio da aplicação da mudança
+# PlannedStartDate: '2017-06-26T16:40:00'
+# Data prevista de fim da aplicação da mudança
+# PlannedEndDate: '2017-06-26T23:45:00'
+
+TimeZoneId: 'Brazil/East'
+
+CustomFields:
+# Opcional (boolean): Se foi executado algum teste funcional antes do deploy (stg).
+#  WasFunctionalTestExecuted: true
+# Opcional (string): Descrição do teste executado.
+#  TestDescription: 'Testes de sistema automátizados executados pelo GoCD'
+# Opcional (string) Descrição de possível impacto da aplicação da mudança.
+#  PossibleImpact: 'Nenhum impacto mapeado'
+# Opcional (string): Quem validou a mudança após o deploy.
+#  ChangeValidatorName: businessguy@stone.com.br
+# Opcional (string): Departamento que validou a mudança.
+#  ChangeValidatorDepartment: 'RC'
+
+# Obrigatório (string): Nome da aplicação implantada.
+  SystemName: Athena-Api
+
+# Obrigatório (enum): Motivo do deploy, valores possíveis:
+# - Feature
+# - Bugfix
+# - BugfixAndFeature
+  ChangeReason: Feature
+# Obrigatório (boolean): É uma mudança emergencial?
+  EmergencialChange: false
+# Obrigatório (boolean): Pode afetar sistemas críticos (Autorização, Pagamento, Atendimento)?
+  CanAffectCriticalSystems: false
+# Obrigatório (boolean): Irá afetar clientes/parceiros stone?
+  WillAffectExternalCustomers: false
+# Obrigatório (boolean): Irá afetar clientes internos (colaboradores) stone?
+  WillAffectInternalCustomers: true
+# Obrigatório (boolean): Pode afetar outros sistemas em produção?
+  CanAffectOtherSystems: false
+# Obrigatório (boolean): Será executado no ambiente de produção?
+  IsProductionEnvironment: true
+# Obrigatório (string): Versão do sistema.
+  ApplicationVersion: 1.0.0
