@@ -134,7 +134,7 @@ class TeamLicense(BaseDb):
             {'$lookup': {'from': 'Repo', 'localField': 'from', 'foreignField': '_id', 'as': 'Repo'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'type': 'repo_to_team', 'Teams.0.org': org}},
+                    {'Teams.0.slug': name, 'Repo.0.openSource': True, 'type': 'repo_to_team', 'Teams.0.org': org}},
             {'$group': {
                 '_id': {
                     'status': "$Repo.licenseType",
@@ -146,6 +146,9 @@ class TeamLicense(BaseDb):
         ]
         query_result = self.db.edges.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
+        print(readme_status_list)
+        if not readme_status_list:
+            return jsonify([{'status': 'None', 'count': 100.0}])
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
             if readme_status['status'][0] is None:
@@ -153,6 +156,8 @@ class TeamLicense(BaseDb):
             else:
                 readme_status['status'] = readme_status['status'][0]
             readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
+        readme_status_list = sorted(readme_status_list, key=itemgetter('count'), reverse=True)
+        print(readme_status_list)
         return jsonify(readme_status_list)
 
 

@@ -153,10 +153,13 @@ class OrgLicense(BaseDb):
                  {'$project': {'_id': 0, "license": {'$ifNull': ["$_id.license", "None"]}, 'count': 1}}
                  ]
         license_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
+        if not license_type_list:
+            return jsonify([{'status': 'None', 'count': 100.0}])
         result_sum = sum([license_type['count'] for license_type in license_type_list])
         for license_type in license_type_list:
             license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
         license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
+        print(license_type_list)
         return jsonify(license_type_list)
 
 
