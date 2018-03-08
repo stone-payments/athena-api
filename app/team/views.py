@@ -9,7 +9,7 @@ class CheckWithExist(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
-        query = {'org': org, 'slug': name}
+        query = {'org': org, 'slug': name, 'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}
         projection = {'_id': 1}
         query_result = query_find_to_dictionary(self.db, 'Teams', query, projection)
         if not query_result:
@@ -22,16 +22,19 @@ class TeamLanguages(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
         query = [
-            {'$lookup': {'from': 'Teams', 'localField': 'to', 'foreignField': '_id', 'as': 'Teams'}},
-            {'$lookup': {'from': 'Repo', 'localField': 'from', 'foreignField': '_id', 'as': 'Repo'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'type': 'repo_to_team', 'Teams.0.org': org}},
-            {"$unwind": "$Repo"},
-            {'$project': {'_id': 0, "languages": "$Repo.languages", 'count': 1}},
+                    {'_id': {'$in': repo_id_list}}},
+
             {"$unwind": "$languages"},
-            {'$project': {'_id': 0, "languages": "$languages", 'count': 1}},
+
             {'$group': {
                 '_id': {
                     'language': "$languages.language",
@@ -42,7 +45,7 @@ class TeamLanguages(BaseDb):
             {'$limit': 12},
             {'$project': {"language": "$_id.language", "_id": 0, 'count': 1}}
         ]
-        query_result = self.db.edges.aggregate(query)
+        query_result = self.db.Repo.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
@@ -57,28 +60,31 @@ class TeamOpenSource(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
         query = [
-            {'$lookup': {'from': 'Teams', 'localField': 'to', 'foreignField': '_id', 'as': 'Teams'}},
-            {'$lookup': {'from': 'Repo', 'localField': 'from', 'foreignField': '_id', 'as': 'Repo'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'type': 'repo_to_team', 'Teams.0.org': org}},
+                    {'_id': {'$in': repo_id_list}}},
             {'$group': {
                 '_id': {
-                    'status': "$Repo.openSource",
+                    'status': "$openSource",
                 },
                 'count': {'$sum': 1}
             }},
             {'$sort': {'_id.status': -1}},
             {'$project': {"status": "$_id.status", "_id": 0, 'count': 1}}
         ]
-        query_result = self.db.edges.aggregate(query)
+        query_result = self.db.Repo.aggregate(query)
         if not query_result:
             return json.dumps([{'response': 404}])
         readme_status_list = [dict(i) for i in query_result]
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
-            readme_status['status'] = readme_status['status'][0]
             readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
         if len(readme_status_list) < 2:
             find_key(readme_status_list, [True, False])
@@ -91,29 +97,31 @@ class TeamReadme(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
         query = [
-            {'$lookup': {'from': 'Teams', 'localField': 'to', 'foreignField': '_id', 'as': 'Teams'}},
-            {'$lookup': {'from': 'Repo', 'localField': 'from', 'foreignField': '_id', 'as': 'Repo'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'type': 'repo_to_team', 'Teams.0.org': org}},
+                    {'_id': {'$in': repo_id_list}}},
             {'$group': {
                 '_id': {
-                    'status': "$Repo.readme",
+                    'status': "$readme",
                 },
                 'count': {'$sum': 1}
             }},
             {'$sort': {'_id.status': -1}},
             {'$project': {"status": "$_id.status", "_id": 0, 'count': 1}}
         ]
-        query_result = self.db.edges.aggregate(query)
+        query_result = self.db.Repo.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
-            if readme_status['status'][0] is None:
+            if readme_status['status'] is None:
                 readme_status['status'] = 'None'
-            else:
-                readme_status['status'] = readme_status['status'][0]
             readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
         if len(readme_status_list) < 3:
             find_key(readme_status_list, ['None', 'Poor', 'OK'])
@@ -126,31 +134,33 @@ class TeamLicense(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
         query = [
-            {'$lookup': {'from': 'Teams', 'localField': 'to', 'foreignField': '_id', 'as': 'Teams'}},
-            {'$lookup': {'from': 'Repo', 'localField': 'from', 'foreignField': '_id', 'as': 'Repo'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'Repo.0.openSource': True, 'type': 'repo_to_team', 'Teams.0.org': org}},
+                    {'_id': {'$in': repo_id_list}}},
             {'$group': {
                 '_id': {
-                    'status': "$Repo.licenseType",
+                    'status': "$licenseType",
                 },
                 'count': {'$sum': 1}
             }},
             {'$sort': {'_id.count': -1}},
             {'$project': {"status": "$_id.status", "_id": 0, 'count': 1}}
         ]
-        query_result = self.db.edges.aggregate(query)
+        query_result = self.db.Repo.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
         if not readme_status_list:
             return jsonify([{'status': 'None', 'count': 100.0}])
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
-            if readme_status['status'][0] is None:
+            if readme_status['status'] is None:
                 readme_status['status'] = 'None'
-            else:
-                readme_status['status'] = readme_status['status'][0]
             readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
         readme_status_list = sorted(readme_status_list, key=itemgetter('count'), reverse=True)
         return jsonify(readme_status_list)
@@ -161,21 +171,25 @@ class TeamRepoMembers(BaseDb):
     def get(self):
         org = request.args.get("org")
         name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team',
+                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
         query = [
-            {'$lookup': {'from': 'Teams', 'localField': 'to', 'foreignField': '_id', 'as': 'Teams'}},
-            {'$lookup': {'from': 'Dev', 'localField': 'from', 'foreignField': '_id', 'as': 'Dev'}},
             {
                 '$match':
-                    {'Teams.0.slug': name, 'type': 'dev_to_team', 'Teams.0.org': org}},
+                    {'_id': {'$in': dev_id_list}}},
             {'$group': {
                 '_id': {
-                    'member': "$Dev.login",
+                    'member': "$login",
                 }
             }},
             {'$sort': {'_id.member': 1}},
             {'$project': {"member": "$_id.member", "_id": 0}}
         ]
-        query_result = query_aggregate_to_dictionary(self.db, 'edges', query)
+        query_result = query_aggregate_to_dictionary(self.db, 'Dev', query)
         return jsonify(query_result)
 
 
@@ -185,8 +199,9 @@ class TeamName(BaseDb):
         name = "^" + str(request.args.get("name"))
         org = request.args.get("org")
         compiled_name = re.compile(r'%s' % name, re.I)
-        query_result = self.db['Teams'].find({'slug': {'$regex': compiled_name}, 'org': org},
-                                        {'_id': 0, 'slug': 1}).limit(6)
+        query_result = self.db['Teams'].find({'slug': {'$regex': compiled_name}, 'org': org,
+                                              'db_last_updated': {'$gte': utc_time_datetime_format(-1)}},
+                                             {'_id': 0, 'slug': 1}).limit(6)
         result = [dict(i) for i in query_result]
         if not query_result:
             return jsonify([{'response': 404}])
@@ -203,25 +218,24 @@ class TeamCommits(BaseDb):
         delta = end_date - start_date
         id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
-                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team'})
+                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team'})
         query = [{'$match': {'devId': {'$in': dev_id_list},
-                                 'committedDate': {'$gte': start_date, '$lt': end_date}}},
-                     {'$group': {
-                         '_id': {
-                             'year': {'$year': "$committedDate"},
-                             'month': {'$month': "$committedDate"},
-                             'day': {'$dayOfMonth': "$committedDate"},
-                         },
-                         'count': {'$sum': 1}
-                     }},
-                     {'$project': {"_id": 0, "year": "$_id.year", "month": "$_id.month",
-                                   "day": "$_id.day",
-                                   'count': 1}}]
+                             'committedDate': {'$gte': start_date, '$lt': end_date}}},
+                 {'$group': {
+                     '_id': {
+                         'year': {'$year': "$committedDate"},
+                         'month': {'$month': "$committedDate"},
+                         'day': {'$dayOfMonth': "$committedDate"},
+                     },
+                     'count': {'$sum': 1}
+                 }},
+                 {'$project': {"_id": 0, "year": "$_id.year", "month": "$_id.month",
+                               "day": "$_id.day",
+                               'count': 1}}]
         count_list = query_aggregate_to_dictionary(self.db, 'Commit', query)
         if count_list:
             for count in count_list:
                 count['date'] = dt.datetime(count['year'], count['month'], count['day'], 0, 0)
-            print(count_list)
         days = [start_date + dt.timedelta(days=i) for i in range(delta.days + 1)]
         lst = [fill_all_dates(day, count_list) for day in days]
         return jsonify(lst)
