@@ -461,7 +461,7 @@ class ReportPercentReadme(BaseDb):
         lista.to_excel(writer, sheet_name='Sheet1', index=False)
         writer.close()
         output.seek(0)
-        return send_file(output, attachment_filename="testing.xlsx", as_attachment=True)
+        return send_file(output, attachment_filename="{}{}".format(org,"report_readme.xlsx"), as_attachment=True)
 
 
 class ReportReadme(BaseDb):
@@ -513,4 +513,4 @@ class ReportReadme(BaseDb):
         query_result.to_excel(writer, sheet_name='Sheet1', index=False)
         writer.close()
         output.seek(0)
-        return send_file(output, attachment_filename="testing.xlsx", as_attachment=True)
+        return send_file(output, attachment_filename="{}{}".format(org,"report_readme.xlsx"), as_attachment=True)
