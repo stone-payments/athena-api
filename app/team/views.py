@@ -1,7 +1,12 @@
+import io
 from flask import jsonify
 from app.common.client import *
 from app.common.module import *
 from app.common.db import BaseDb
+from pandas.io.json import json_normalize
+import pandas as pd
+from flask import send_file
+import xlsxwriter
 
 
 class CheckWithExist(BaseDb):
@@ -27,7 +32,8 @@ class TeamLanguages(BaseDb):
                                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
-                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(-1)}})
         query = [
             {
                 '$match':
@@ -65,7 +71,8 @@ class TeamOpenSource(BaseDb):
                                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
-                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(-1)}})
         query = [
             {
                 '$match':
@@ -102,7 +109,8 @@ class TeamReadme(BaseDb):
                                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
-                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(-1)}})
         query = [
             {
                 '$match':
@@ -139,11 +147,13 @@ class TeamLicense(BaseDb):
                                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
-                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(-1)}})
+        print(repo_id_list)
         query = [
             {
                 '$match':
-                    {'_id': {'$in': repo_id_list}}},
+                    {'_id': {'$in': repo_id_list}, 'openSource': True}},
             {'$group': {
                 '_id': {
                     'status': "$licenseType",
@@ -155,8 +165,9 @@ class TeamLicense(BaseDb):
         ]
         query_result = self.db.Repo.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
+        print(readme_status_list)
         if not readme_status_list:
-            return jsonify([{'status': 'None', 'count': 100.0}])
+            return jsonify([{'status': 'Only private repositories', 'count': 100.0}])
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
             if readme_status['status'] is None:
@@ -175,8 +186,9 @@ class TeamRepoMembers(BaseDb):
                                            {'slug': name, 'org': org,
                                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
-                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team',
-                                                          'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}})
+                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team',
+                                                         'data.db_last_updated': {
+                                                             '$gte': utc_time_datetime_format(-1)}})
         query = [
             {
                 '$match':
@@ -370,3 +382,135 @@ class TeamNewWork(BaseDb):
             return jsonify([response, {'x': average_x, 'y': average_y}])
         else:
             return jsonify([response, {'x': 0, 'y': 0}])
+
+
+class ReportPercentReadme(BaseDb):
+
+    def get(self):
+        org = request.args.get("org")
+        teams_id = query_find_to_dictionary(self.db, 'Teams', {'org': org,
+                                                               'db_last_updated': {
+                                                                   '$gte': utc_time_datetime_format(-1)}},
+                                            {'_id': '_id'})
+        teams_id = [x['_id'] for x in teams_id]
+        query = [
+            {
+                '$match':
+                    {'to': {'$in': teams_id}, "type": 'repo_to_team',
+                     'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+            {'$group': {'_id': "$to", 'repositories': {'$push': "$from"}}},
+            {'$project': {"repositories": "$repositories"}},
+            {
+                '$lookup':
+                    {
+                        'from': "Repo",
+                        'localField': "repositories",
+                        'foreignField': "_id",
+                        'as': "repositories"
+                    }
+            },
+            {
+                '$lookup':
+                    {
+                        'from': "Teams",
+                        'localField': "_id",
+                        'foreignField': "_id",
+                        'as': "teams"
+                    }
+            },
+            {'$project': {"teams": "$teams.slug", "repositories": "$repositories", "_id": 1}},
+            {"$unwind": "$repositories"},
+            {'$group': {
+                '_id': {
+                    'team': '$_id',
+                    'readme': '$repositories.readme',
+                    'team_name': '$teams'
+                },
+                'count': {'$sum': 1}
+            }},
+            {'$sort': {'_id.team': -1}},
+            {"$unwind": "$_id.team_name"},
+            {'$project': {"team": "$_id.team_name", "readme": "$_id.readme", "count": "$count",
+                          "_id": 0}},
+            {'$group': {'_id': "$team", 'team': {'$push': "$$ROOT"}}},
+            {'$project': {"team": 1, "_id": 0}},
+        ]
+        query_result = self.db.edges.aggregate(query)
+        readme_status_list2 = [dict(i) for i in query_result]
+        lista = []
+        for readme_status_list in readme_status_list2:
+            readme_status_list = readme_status_list['team']
+            lista.append(readme_status_list)
+        """return in percentage"""
+        #     soma = sum([readme_status['count'] for readme_status in readme_status_list])
+        #     print(soma)
+        #     for readme_status in readme_status_list:
+        #         if readme_status['readme'] is None:
+        #             readme_status['readme'] = 'None'
+        #         readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
+        #     if len(readme_status_list) < 3:
+        #         find_key(readme_status_list, ['None', 'Poor', 'OK'])
+        #     readme_status_list = sorted(readme_status_list, key=itemgetter('readme'), reverse=True)
+        #     lista.append(readme_status_list)
+        # lista = [x[0] for x in lista]
+        flat_list = [item for sublist in lista for item in sublist]
+        lista = json_normalize(flat_list)
+        lista["readme"] = lista["readme"].astype(str)
+        output = io.BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        lista.to_excel(writer, sheet_name='Sheet1', index=False)
+        writer.close()
+        output.seek(0)
+        return send_file(output, attachment_filename="testing.xlsx", as_attachment=True)
+
+
+class ReportReadme(BaseDb):
+
+    def get(self):
+        org = request.args.get("org")
+        teams_id = query_find_to_dictionary(self.db, 'Teams', {'org': org,
+                                                               'db_last_updated': {
+                                                                   '$gte': utc_time_datetime_format(-1)}},
+                                            {'_id': '_id'})
+        teams_id = [x['_id'] for x in teams_id]
+        query = [
+            {
+                '$match':
+                    {'to': {'$in': teams_id}, "type": 'repo_to_team',
+                     'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+            {'$group': {'_id': "$to", 'repositories': {'$push': "$from"}}},
+            {'$project': {"repositories": "$repositories"}},
+            {
+                '$lookup':
+                    {
+                        'from': "Repo",
+                        'localField': "repositories",
+                        'foreignField': "_id",
+                        'as': "repositories"
+                    }
+            },
+            {
+                '$lookup':
+                    {
+                        'from': "Teams",
+                        'localField': "_id",
+                        'foreignField': "_id",
+                        'as': "teams"
+                    }
+            },
+            {'$project': {"teams": "$teams.slug", "repositories": "$repositories", "_id": 1}},
+            {"$unwind": "$repositories"},
+            {'$project': {"team": "$teams", "repository": "$repositories.readme", "repo_name": "$repositories.repoName",
+                          "_id": 0}},
+            {"$unwind": "$team"},
+        ]
+        query_result = self.db.edges.aggregate(query)
+        query_result = [dict(i) for i in query_result]
+        query_result = json_normalize(query_result)
+        query_result["readme"] = query_result["readme"].astype(str)
+        output = io.BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        query_result.to_excel(writer, sheet_name='Sheet1', index=False)
+        writer.close()
+        output.seek(0)
+        return send_file(output, attachment_filename="testing.xlsx", as_attachment=True)

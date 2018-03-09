@@ -13,7 +13,7 @@ def create_app(config_name):
     from app.user.views import UserAvatar, UserCommit, UserContributedRepo,\
         UserStats, UserLogin, UserTeam, UserNewWork
     from app.team.views import CheckWithExist, TeamCommits, TeamIssues, TeamLanguages, TeamLicense,\
-        TeamName, TeamNewWork, TeamOpenSource, TeamReadme, TeamRepoMembers
+        TeamName, TeamNewWork, TeamOpenSource, TeamReadme, TeamRepoMembers, ReportPercentReadme, ReportReadme
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
@@ -58,5 +58,7 @@ def create_app(config_name):
     app.add_url_rule('/team_commits', view_func=TeamCommits.as_view('team_commits'), methods=['GET'])
     app.add_url_rule('/team_issues', view_func=TeamIssues.as_view('team_issues'), methods=['GET'])
     app.add_url_rule('/team_new_work', view_func=TeamNewWork.as_view('team_new_work'), methods=['GET'])
+    app.add_url_rule('/report_percent_readme', view_func=ReportPercentReadme.as_view('report_percent_readme'), methods=['GET'])
+    app.add_url_rule('/report_readme', view_func=ReportReadme.as_view('report_readme'), methods=['GET'])
 
     return app
