@@ -159,7 +159,6 @@ class OrgLicense(BaseDb):
         for license_type in license_type_list:
             license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
         license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
-        print(license_type_list)
         return jsonify(license_type_list)
 
 
