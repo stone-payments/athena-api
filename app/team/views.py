@@ -1,12 +1,12 @@
-import io
+# import io
 from flask import jsonify
 from app.common.client import *
 from app.common.module import *
 from app.common.db import BaseDb
-from pandas.io.json import json_normalize
-import pandas as pd
-from flask import send_file
-import xlsxwriter
+# from pandas.io.json import json_normalize
+# import pandas as pd
+# from flask import send_file
+# import xlsxwriter
 
 
 class CheckWithExist(BaseDb):
@@ -149,7 +149,6 @@ class TeamLicense(BaseDb):
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
                                                               '$gte': utc_time_datetime_format(-1)}})
-        print(repo_id_list)
         query = [
             {
                 '$match':
@@ -165,7 +164,6 @@ class TeamLicense(BaseDb):
         ]
         query_result = self.db.Repo.aggregate(query)
         readme_status_list = [dict(i) for i in query_result]
-        print(readme_status_list)
         if not readme_status_list:
             return jsonify([{'status': 'Only private repositories', 'count': 100.0}])
         soma = sum([readme_status['count'] for readme_status in readme_status_list])
@@ -384,7 +382,7 @@ class TeamNewWork(BaseDb):
             return jsonify([response, {'x': 0, 'y': 0}])
 
 
-class ReportPercentReadme(BaseDb):
+class ReportConsolidateReadme(BaseDb):
 
     def get(self):
         org = request.args.get("org")
@@ -441,27 +439,8 @@ class ReportPercentReadme(BaseDb):
         for readme_status_list in readme_status_list2:
             readme_status_list = readme_status_list['team']
             lista.append(readme_status_list)
-        """return in percentage"""
-        #     soma = sum([readme_status['count'] for readme_status in readme_status_list])
-        #     print(soma)
-        #     for readme_status in readme_status_list:
-        #         if readme_status['readme'] is None:
-        #             readme_status['readme'] = 'None'
-        #         readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
-        #     if len(readme_status_list) < 3:
-        #         find_key(readme_status_list, ['None', 'Poor', 'OK'])
-        #     readme_status_list = sorted(readme_status_list, key=itemgetter('readme'), reverse=True)
-        #     lista.append(readme_status_list)
-        # lista = [x[0] for x in lista]
         flat_list = [item for sublist in lista for item in sublist]
-        lista = json_normalize(flat_list)
-        lista["readme"] = lista["readme"].astype(str)
-        output = io.BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        lista.to_excel(writer, sheet_name='Sheet1', index=False)
-        writer.close()
-        output.seek(0)
-        return send_file(output, attachment_filename="{}{}".format(org,"report_readme.xlsx"), as_attachment=True)
+        return jsonify(flat_list)
 
 
 class ReportReadme(BaseDb):
@@ -500,17 +479,10 @@ class ReportReadme(BaseDb):
             },
             {'$project': {"teams": "$teams.slug", "repositories": "$repositories", "_id": 1}},
             {"$unwind": "$repositories"},
-            {'$project': {"team": "$teams", "repository": "$repositories.readme", "repo_name": "$repositories.repoName",
+            {'$project': {"team": "$teams", "status": "$repositories.readme", "repo_name": "$repositories.repoName",
                           "_id": 0}},
             {"$unwind": "$team"},
         ]
         query_result = self.db.edges.aggregate(query)
         query_result = [dict(i) for i in query_result]
-        query_result = json_normalize(query_result)
-        query_result["readme"] = query_result["readme"].astype(str)
-        output = io.BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        query_result.to_excel(writer, sheet_name='Sheet1', index=False)
-        writer.close()
-        output.seek(0)
-        return send_file(output, attachment_filename="{}{}".format(org,"report_readme.xlsx"), as_attachment=True)
+        return jsonify(query_result)
