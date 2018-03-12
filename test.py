@@ -136,6 +136,10 @@ class AthenaRouterTestCase(unittest.TestCase):
         res = self.client().get('/user_new_work?name=MSDandrea&startDate=2018-02-01&endDate=2018-02-16')
         self.assertEqual(res.status_code, 200)
 
+    def test_api_report_team(self):
+        res = self.client().get('/report_readme?org=stone-payments')
+        self.assertEqual(res.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
