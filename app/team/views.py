@@ -481,3 +481,50 @@ class ReportReadme(BaseDb):
         query_result = self.db.edges.aggregate(query)
         query_result = [dict(i) for i in query_result]
         return jsonify(query_result)
+
+
+class ReportRepositoryInfo(BaseDb):
+
+    def get(self):
+        org = request.args.get("org")
+        teams_id = query_find_to_dictionary(self.db, 'Teams', {'org': org,
+                                                               'db_last_updated': {
+                                                                   '$gte': utc_time_datetime_format(-1)}},
+                                            {'_id': '_id'})
+        teams_id = [x['_id'] for x in teams_id]
+        query = [
+            {
+                '$match':
+                    {'to': {'$in': teams_id}, "type": 'repo_to_team',
+                     'data.db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+            {'$group': {'_id': "$to", 'repositories': {'$push': "$from"}}},
+            {'$project': {"repositories": "$repositories"}},
+            {
+                '$lookup':
+                    {
+                        'from': "Repo",
+                        'localField': "repositories",
+                        'foreignField': "_id",
+                        'as': "repositories"
+                    }
+            },
+            {
+                '$lookup':
+                    {
+                        'from': "Teams",
+                        'localField': "_id",
+                        'foreignField': "_id",
+                        'as': "teams"
+                    }
+            },
+            {'$project': {"teams": "$teams.slug", "repositories": "$repositories", "_id": 1}},
+            {"$unwind": "$repositories"},
+            {'$project': {"team": "$teams", "readme": "$repositories.readme", "repo_name": "$repositories.repoName",
+                          "openSource": "$repositories.openSource",
+                          "license": "$repositories.licenseType", "contributing": "$repositories.contributing",
+                          "_id": 0}},
+            {"$unwind": "$team"},
+        ]
+        query_result = self.db.edges.aggregate(query)
+        query_result = [dict(i) for i in query_result]
+        return jsonify(query_result)
