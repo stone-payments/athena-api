@@ -71,7 +71,7 @@ class RepoBestPratices(BaseDb):
         db_last_updated = dt.datetime.utcnow() + dt.timedelta(hours=-5)
         query = {'org': org, 'repoName': name, 'db_last_updated': {'$gte': db_last_updated}}
         projection = {'_id': 0, 'repoName': 1, 'forks': 1, 'stargazers': 1, 'openSource': 1, 'licenseType': 1,
-                      'readme': 1,
+                      'readme': 1, 'readmeLanguage': 1,
                       'db_last_updated': 1, 'description': 1}
         query_result = query_find_to_dictionary(self.db, 'Repo', query, projection)
         if not query_result:
