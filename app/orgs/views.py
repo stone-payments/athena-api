@@ -212,3 +212,50 @@ class OrgInfo(BaseDb):
                                                      org_info_list[0]['db_last_updated']).total_seconds() / 60)
         return jsonify(org_info_list)
 
+
+class OrgReadmeLanguage(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        query = [{'$match': {'org': name,
+                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+                 {'$group': {
+                     '_id': {
+                         "readmeLanguage": "$readmeLanguage",
+                     },
+                     'count': {'$sum': 1}
+                 }},
+                 {'$project': {'_id': 0, "readmeLanguage": {'$ifNull': ["$_id.readmeLanguage", "None"]}, 'count': 1}}
+                 ]
+        license_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
+        if not license_type_list:
+            return jsonify([{'status': 'None', 'count': 100.0}])
+        result_sum = sum([license_type['count'] for license_type in license_type_list])
+        for license_type in license_type_list:
+            license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
+        license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
+        return jsonify(license_type_list)
+
+
+class OrgOpenSourceReadmeLanguage(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        query = [{'$match': {'org': name, 'openSource': True,
+                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+                 {'$group': {
+                     '_id': {
+                         "readmeLanguage": "$readmeLanguage",
+                     },
+                     'count': {'$sum': 1}
+                 }},
+                 {'$project': {'_id': 0, "readmeLanguage": {'$ifNull': ["$_id.readmeLanguage", "None"]}, 'count': 1}}
+                 ]
+        license_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
+        if not license_type_list:
+            return jsonify([{'status': 'None', 'count': 100.0}])
+        result_sum = sum([license_type['count'] for license_type in license_type_list])
+        for license_type in license_type_list:
+            license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
+        license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
+        return jsonify(license_type_list)

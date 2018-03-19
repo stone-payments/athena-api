@@ -7,14 +7,15 @@ from app.common.config import *
 def create_app(config_name):
 
     from app.orgs.views import OrgNames, OrgLanguages, \
-        OrgOpenSource, OrgCommits, OrgReadme, OrgOpenSourceReadme, OrgLicense, OrgIssues, OrgInfo
+        OrgOpenSource, OrgCommits, OrgReadme, OrgOpenSourceReadme, OrgLicense, OrgIssues, OrgInfo, OrgReadmeLanguage,\
+        OrgOpenSourceReadmeLanguage
     from app.repo.views import RepoName, RepoLanguages, RepoCommits, RepoMembers,\
         RepoBestPratices, RepoIssues
     from app.user.views import UserAvatar, UserCommit, UserContributedRepo,\
         UserStats, UserLogin, UserTeam, UserNewWork
     from app.team.views import CheckWithExist, TeamCommits, TeamIssues, TeamLanguages, TeamLicense,\
         TeamName, TeamNewWork, TeamOpenSource, TeamReadme, TeamRepoMembers, ReportConsolidateReadme, ReportReadme,\
-        ReportRepositoryInfo
+        ReportRepositoryInfo, TeamReadmeLanguages
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
@@ -31,6 +32,10 @@ def create_app(config_name):
     app.add_url_rule('/org_license', view_func=OrgLicense.as_view('org_license'), methods=['GET'])
     app.add_url_rule('/org_issues', view_func=OrgIssues.as_view('org_issues'), methods=['GET'])
     app.add_url_rule('/org_info', view_func=OrgInfo.as_view('org_info'), methods=['GET'])
+    app.add_url_rule('/org_readme_languages', view_func=OrgReadmeLanguage.as_view('org_readme_languages'),
+                     methods=['GET'])
+    app.add_url_rule('/org_open_source_readme_languages',
+                     view_func=OrgOpenSourceReadmeLanguage.as_view('org_open_source_readme_languages'), methods=['GET'])
     # repo
     app.add_url_rule('/repo_name', view_func=RepoName.as_view('repo_name'), methods=['GET'])
     app.add_url_rule('/repo_languages', view_func=RepoLanguages.as_view('repo_languages'), methods=['GET'])
@@ -60,6 +65,8 @@ def create_app(config_name):
     app.add_url_rule('/team_commits', view_func=TeamCommits.as_view('team_commits'), methods=['GET'])
     app.add_url_rule('/team_issues', view_func=TeamIssues.as_view('team_issues'), methods=['GET'])
     app.add_url_rule('/team_new_work', view_func=TeamNewWork.as_view('team_new_work'), methods=['GET'])
+    app.add_url_rule('/team_readme_languages', view_func=TeamReadmeLanguages.as_view('team_readme_languages'),
+                     methods=['GET'])
     app.add_url_rule('/report_consolidate_readme',
                      view_func=ReportConsolidateReadme.as_view('report_consolidate_readme'), methods=['GET'])
     app.add_url_rule('/report_readme', view_func=ReportReadme.as_view('report_readme'), methods=['GET'])

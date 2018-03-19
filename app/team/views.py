@@ -170,6 +170,42 @@ class TeamLicense(BaseDb):
         return jsonify(readme_status_list)
 
 
+class TeamReadmeLanguages(BaseDb):
+
+    def get(self):
+        org = request.args.get("org")
+        name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}, {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(-1)}})
+        query = [
+            {
+                '$match':
+                    {'_id': {'$in': repo_id_list}}},
+            {'$group': {
+                '_id': {
+                    'language': "$readmeLanguage",
+                },
+                'count': {'$sum': 1}
+            }},
+            {'$sort': {'_id.count': -1}},
+            {'$project': {"language": {'$ifNull': ["$_id.language", "None"]}, "_id": 0, 'count': 1}}
+        ]
+        query_result = self.db.Repo.aggregate(query)
+        readme_status_list = [dict(i) for i in query_result]
+        if not readme_status_list:
+            return jsonify([{'language': 'None', 'count': 100.0}])
+        soma = sum([readme_status['count'] for readme_status in readme_status_list])
+        for readme_status in readme_status_list:
+            readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
+        readme_status_list = sorted(readme_status_list, key=itemgetter('count'), reverse=True)
+        return jsonify(readme_status_list)
+
+
 class TeamRepoMembers(BaseDb):
 
     def get(self):
