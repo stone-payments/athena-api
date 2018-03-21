@@ -60,6 +60,7 @@ class RepoMembers(BaseDb):
         query = {'org': org, 'repoName': name, 'author': {'$ne': None}}
         projection = {'_id': 0, 'author': 1}
         query_result = query_find(self.db, 'Commit', query, projection).distinct("author")
+        query_result = sorted(query_result, key=lambda x: x.lower(), reverse=False)
         return jsonify(query_result)
 
 

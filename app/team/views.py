@@ -238,6 +238,7 @@ class TeamRepoMembers(BaseDb):
             {'$project': {"member": "$_id.member", "_id": 0}}
         ]
         query_result = query_aggregate_to_dictionary(self.db, 'Dev', query)
+        query_result = sorted(query_result, key=lambda x: x['member'].lower(), reverse=False)
         return jsonify(query_result)
 
 
@@ -591,7 +592,9 @@ class TeamRepositoriesReadme(BaseDb):
             {
                 '$match':
                     {'_id': {'$in': repo_id_list}}},
+            {'$sort': {'repoName': 1}},
             {'$project': {"repoName": "$repoName", "status": {'$ifNull': ["$readme", "None"]}, "_id": 0}},
         ]
         query_result = query_aggregate_to_dictionary(self.db, "Repo", query)
+        query_result = sorted(query_result, key=lambda x: x['repoName'].lower(), reverse=False)
         return jsonify(query_result)
