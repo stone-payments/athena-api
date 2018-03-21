@@ -8,7 +8,7 @@ from operator import itemgetter
 
 
 def utc_time_datetime_format(since_time_delta):
-    return dt.datetime.utcnow() + dt.timedelta(int(since_time_delta))
+    return dt.datetime.utcnow() + dt.timedelta(hours=int(since_time_delta))
 
 
 def find_key(array_to_be_find, keys):

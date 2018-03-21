@@ -2,6 +2,7 @@ from flask import jsonify
 from app.common.client import *
 from app.common.module import *
 from app.common.db import BaseDb
+from app.common.config import since_hour_delta
 
 
 class UserAvatar(BaseDb):
@@ -64,7 +65,6 @@ class UserContributedRepo(BaseDb):
             },
             {'$project': {'_id': 0, "org": "$_id.org", 'repoName': '$_id.repoName'}}
         ]
-        # projection = {'_id': 0, 'repoName': 1, 'org': 1}
         query_result = query_aggregate_to_dictionary(self.db, 'Commit', query)
         return jsonify(query_result)
 
@@ -127,7 +127,7 @@ class UserTeam(BaseDb):
             {
                 '$match':
                     {"Dev.0.login": name, 'type': 'dev_to_team', 'data.db_last_updated':
-                        {'$gte': utc_time_datetime_format(-1)}}
+                        {'$gte': utc_time_datetime_format(since_hour_delta)}}
             },
             {'$sort': {'Team.teamName': 1}},
             {'$project': {'_id': 0, "Team.teamName": 1, 'Team.org': 1, 'Team.slug': 1}}
