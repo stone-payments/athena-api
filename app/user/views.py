@@ -66,6 +66,7 @@ class UserContributedRepo(BaseDb):
             {'$project': {'_id': 0, "org": "$_id.org", 'repoName': '$_id.repoName'}}
         ]
         query_result = query_aggregate_to_dictionary(self.db, 'Commit', query)
+        query_result = sorted(query_result, key=lambda x: x['repoName'].lower(), reverse=False)
         return jsonify(query_result)
 
 
@@ -132,9 +133,10 @@ class UserTeam(BaseDb):
             {'$sort': {'Team.teamName': 1}},
             {'$project': {'_id': 0, "Team.teamName": 1, 'Team.org': 1, 'Team.slug': 1}}
         ]
-        result = query_aggregate_to_dictionary(self.db, 'edges', query)
-        result = [x['Team'][0] for x in result]
-        return jsonify(result)
+        query_result = query_aggregate_to_dictionary(self.db, 'edges', query)
+        query_result = [x['Team'][0] for x in query_result]
+        query_result = sorted(query_result, key=lambda x: x['teamName'].lower(), reverse=False)
+        return jsonify(query_result)
 
 
 class UserLogin(BaseDb):
