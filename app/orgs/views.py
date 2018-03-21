@@ -2,6 +2,7 @@ from flask import jsonify
 from app.common.client import *
 from app.common.module import *
 from app.common.db import BaseDb
+from app.common.config import since_hour_delta
 
 
 class OrgNames(BaseDb):
@@ -16,7 +17,7 @@ class OrgLanguages(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$unwind': "$languages"},
                  {'$group': {
                      '_id': {
@@ -37,7 +38,7 @@ class OrgOpenSource(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$group': {
                      '_id': {
                          'openSource': "$openSource",
@@ -89,7 +90,7 @@ class OrgReadme(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$group': {
                      '_id': {
                          'status': "$readme",
@@ -116,7 +117,7 @@ class OrgOpenSourceReadme(BaseDb):
     def get(self):
         name = request.args.get("name")
         query = [
-            {'$match': {'org': name, 'openSource': True, 'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+            {'$match': {'org': name, 'openSource': True, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
             {'$group': {
                 '_id': {
                     'status': "$readme",
@@ -143,7 +144,7 @@ class OrgLicense(BaseDb):
     def get(self):
         name = request.args.get("name")
         query = [{'$match': {'org': name, 'openSource': True,
-                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+                             'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$group': {
                      '_id': {
                          'license': "$licenseType",
@@ -218,7 +219,7 @@ class OrgReadmeLanguage(BaseDb):
     def get(self):
         name = request.args.get("name")
         query = [{'$match': {'org': name,
-                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+                             'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$group': {
                      '_id': {
                          "readmeLanguage": "$readmeLanguage",
@@ -242,7 +243,7 @@ class OrgOpenSourceReadmeLanguage(BaseDb):
     def get(self):
         name = request.args.get("name")
         query = [{'$match': {'org': name, 'openSource': True,
-                             'db_last_updated': {'$gte': utc_time_datetime_format(-1)}}},
+                             'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
                  {'$group': {
                      '_id': {
                          "readmeLanguage": "$readmeLanguage",
