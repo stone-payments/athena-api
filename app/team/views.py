@@ -25,7 +25,8 @@ class TeamLanguages(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
@@ -64,7 +65,8 @@ class TeamOpenSource(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
@@ -102,7 +104,8 @@ class TeamReadme(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
@@ -140,7 +143,8 @@ class TeamLicense(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
@@ -178,7 +182,8 @@ class TeamReadmeLanguages(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team',
                                                           'data.db_last_updated': {
@@ -214,7 +219,8 @@ class TeamRepoMembers(BaseDb):
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}, {'_id': '_id'})
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team',
                                                          'data.db_last_updated': {
@@ -387,7 +393,8 @@ class TeamNewWork(BaseDb):
         id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
         id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                     {'to': id_team[0]['_id'], "type": 'dev_to_team',
-                                                     'data.db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}})
+                                                     'data.db_last_updated': {
+                                                         '$gte': utc_time_datetime_format(since_hour_delta)}})
 
         commits_count_list = query_id_name(id_list)
         total_days_count = query_id_name2(id_list)
@@ -556,7 +563,7 @@ class ReportRepositoryInfo(BaseDb):
             },
             {'$project': {"teams": "$teams.slug", "repositories": "$repositories", "_id": 1}},
             {"$unwind": "$repositories"},
-            {'$project': {"readmeLanguage":"$repositories.readmeLanguage", "team": "$teams",
+            {'$project': {"readmeLanguage": "$repositories.readmeLanguage", "team": "$teams",
                           "readme": "$repositories.readme", "repo_name": "$repositories.repoName",
                           "openSource": "$repositories.openSource", "license": "$repositories.licenseType",
                           "contributing": "$repositories.contributing", "_id": 0}},
@@ -564,4 +571,27 @@ class ReportRepositoryInfo(BaseDb):
         ]
         query_result = self.db.edges.aggregate(query)
         query_result = [dict(i) for i in query_result]
+        return jsonify(query_result)
+
+
+class TeamRepositoriesReadme(BaseDb):
+
+    def get(self):
+        org = request.args.get("org")
+        name = request.args.get("name")
+        id_team = query_find_to_dictionary(self.db, 'Teams',
+                                           {'slug': name, 'org': org,
+                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'_id': '_id'})
+        repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
+                                                          'data.db_last_updated': {
+                                                              '$gte': utc_time_datetime_format(since_hour_delta)}})
+        query = [
+            {
+                '$match':
+                    {'_id': {'$in': repo_id_list}}},
+            {'$project': {"repoName": "$repoName", "status": {'$ifNull': ["$readme", "None"]}, "_id": 0}},
+        ]
+        query_result = query_aggregate_to_dictionary(self.db, "Repo", query)
         return jsonify(query_result)
