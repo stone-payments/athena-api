@@ -75,5 +75,5 @@ def create_app(config_name):
     app.add_url_rule('/team_repositories_readme',
                      view_func=TeamRepositoriesReadme.as_view('team_repositories_readme'), methods=['GET'])
 
-
     return app
+

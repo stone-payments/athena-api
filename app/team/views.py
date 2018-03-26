@@ -11,11 +11,13 @@ class CheckWithExist(BaseDb):
         org = request.args.get("org")
         name = request.args.get("name")
         query = {'org': org, 'slug': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}
-        projection = {'_id': 1}
+        projection = {'_id': 0, 'db_last_updated': 1}
         query_result = query_find_to_dictionary(self.db, 'Teams', query, projection)
         if not query_result:
             return jsonify({'response': 404})
-        return jsonify({'response': 200})
+        query_result[0]['db_last_updated'] = round((dt.datetime.utcnow() -
+                                                    query_result[0]['db_last_updated']).total_seconds() / 60)
+        return jsonify(query_result)
 
 
 class TeamLanguages(BaseDb):
@@ -596,5 +598,6 @@ class TeamRepositoriesReadme(BaseDb):
             {'$project': {"repoName": "$repoName", "status": {'$ifNull': ["$readme", "None"]}, "_id": 0}},
         ]
         query_result = query_aggregate_to_dictionary(self.db, "Repo", query)
+        print(query_result)
         query_result = sorted(query_result, key=lambda x: x['repoName'].lower(), reverse=False)
         return jsonify(query_result)
