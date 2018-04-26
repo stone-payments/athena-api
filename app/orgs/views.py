@@ -38,14 +38,15 @@ class OrgOpenSource(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
+        query = [{'$match': {'org': name}},
                  {'$group': {
                      '_id': {
-                         'openSource': "$openSource",
+                         'openSource': {'$slice': ["$open_source.status", -1]},
                      },
                      'count': {'$sum': 1}
                  }},
                  {'$sort': {'_id.openSource': 1}},
+                 {'$unwind': "$_id.openSource"},
                  {'$project': {'_id': 0, "status": "$_id.openSource", 'count': 1}}
                  ]
         open_source_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
@@ -66,12 +67,12 @@ class OrgCommits(BaseDb):
         name = request.args.get("name")
         start_date = dt.datetime.strptime(request.args.get("startDate"), '%Y-%m-%d')
         end_date = dt.datetime.strptime(request.args.get("endDate"), '%Y-%m-%d') + dt.timedelta(seconds=86399)
-        query = [{'$match': {'org': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query = [{'$match': {'org': name, 'committed_date': {'$gte': start_date, '$lt': end_date}}},
                  {'$group': {
                      '_id': {
-                         'year': {'$year': "$committedDate"},
-                         'month': {'$month': "$committedDate"},
-                         'day': {'$dayOfMonth': "$committedDate"},
+                         'year': {'$year': "$committed_date"},
+                         'month': {'$month': "$committed_date"},
+                         'day': {'$dayOfMonth': "$committed_date"},
                      },
                      'count': {'$sum': 1}
                  }},
@@ -90,7 +91,7 @@ class OrgReadme(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
+        query = [{'$match': {'org': name}},
                  {'$group': {
                      '_id': {
                          'status': "$readme",
@@ -117,7 +118,8 @@ class OrgOpenSourceReadme(BaseDb):
     def get(self):
         name = request.args.get("name")
         query = [
-            {'$match': {'org': name, 'openSource': True, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
+            {'$project': {id: 1, 'openSource': {'$slice': ["$open_source.status", -1]}}},
+            {'$match': {'org': name, 'openSource': True}},
             {'$group': {
                 '_id': {
                     'status': "$readme",
@@ -242,17 +244,21 @@ class OrgOpenSourceReadmeLanguage(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'openSource': True,
-                             'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
-                 {'$group': {
-                     '_id': {
-                         "readmeLanguage": "$readmeLanguage",
-                     },
-                     'count': {'$sum': 1}
-                 }},
-                 {'$project': {'_id': 0, "readmeLanguage": {'$ifNull': ["$_id.readmeLanguage", "None"]}, 'count': 1}}
-                 ]
+        query = [
+            {'$project': {'id': 1, 'org': 1, 'readme_language': 1, 'openSource': {'$slice': ["$open_source.status", -1]}}},
+            {'$unwind': "$openSource"},
+            {'$match': {'org': name, 'openSource': True}},
+            {'$group': {
+                '_id': {
+                    'status': "$readme_language",
+                },
+                'count': {'$sum': 1}
+            }},
+            {'$sort': {'_id.status': -1}},
+            {'$project': {'_id': 0, "status": "$_id.status", 'count': 1}}
+            ]
         license_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
+
         if not license_type_list:
             return jsonify([{'status': 'None', 'count': 100.0}])
         result_sum = sum([license_type['count'] for license_type in license_type_list])
