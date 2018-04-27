@@ -266,3 +266,30 @@ class OrgOpenSourceReadmeLanguage(BaseDb):
             license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
         license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
         return jsonify(license_type_list)
+
+
+class OrgHeaderInfo(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        start_date = dt.datetime.strptime(request.args.get("startDate"), '%Y-%m-%d')
+        end_date = dt.datetime.strptime(request.args.get("endDate"), '%Y-%m-%d') + dt.timedelta(seconds=86399)
+        query_repository_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
+                                          {'deleted_at': None}]}
+        query_teams_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
+                                          {'deleted_at': None}]}
+        query_users_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
+                                          {'deleted_at': None}]}
+        query_commits_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
+                                          {'deleted_at': None}]}
+        repository_count = query_count(self.db, 'Repo', query_repository_count)
+        teams_count = query_count(self.db, 'Teams', query_teams_count)
+        user_count = query_count(self.db, 'Dev', query_users_count)
+        commits_count = query_count(self.db, 'Commit', query_commits_count)
+        print({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
+               'avgCommits': commits_count})
+        if repository_count and teams_count and user_count and commits_count:
+            return jsonify({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
+                            'avgCommits': commits_count})
+        return jsonify({'users': 0, 'teams': 0, 'repositories': 0, 'avgCommits': 0})
+
