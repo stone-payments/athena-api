@@ -8,7 +8,7 @@ def create_app(config_name):
 
     from app.orgs.views import OrgNames, OrgLanguages, \
         OrgOpenSource, OrgCommits, OrgReadme, OrgOpenSourceReadme, OrgLicense, OrgIssues, OrgInfo, OrgReadmeLanguage,\
-        OrgOpenSourceReadmeLanguage, OrgHeaderInfo
+        OrgOpenSourceReadmeLanguage, OrgHeaderInfo, OrgLastCommits
     from app.repo.views import RepoName, RepoLanguages, RepoCommits, RepoMembers,\
         RepoBestPratices, RepoIssues
     from app.user.views import UserAvatar, UserCommit, UserContributedRepo,\
@@ -31,12 +31,14 @@ def create_app(config_name):
                      methods=['GET'])
     app.add_url_rule('/org_license', view_func=OrgLicense.as_view('org_license'), methods=['GET'])
     app.add_url_rule('/org_issues', view_func=OrgIssues.as_view('org_issues'), methods=['GET'])
+    OrgLastCommits
     app.add_url_rule('/org_info', view_func=OrgInfo.as_view('org_info'), methods=['GET'])
     app.add_url_rule('/org_readme_languages', view_func=OrgReadmeLanguage.as_view('org_readme_languages'),
                      methods=['GET'])
     app.add_url_rule('/org_open_source_readme_languages',
                      view_func=OrgOpenSourceReadmeLanguage.as_view('org_open_source_readme_languages'), methods=['GET'])
     app.add_url_rule('/org_header_info', view_func=OrgHeaderInfo.as_view('org_header_info'), methods=['GET'])
+    app.add_url_rule('/org_last_commit', view_func=OrgLastCommits.as_view('org_last_commit'), methods=['GET'])
 
     # repo
     app.add_url_rule('/repo_name', view_func=RepoName.as_view('repo_name'), methods=['GET'])

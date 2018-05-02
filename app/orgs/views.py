@@ -172,24 +172,24 @@ class OrgIssues(BaseDb):
         start_date = dt.datetime.strptime(request.args.get("startDate"), '%Y-%m-%d')
         end_date = dt.datetime.strptime(request.args.get("endDate"), '%Y-%m-%d') + dt.timedelta(seconds=86399)
         delta = end_date - start_date
-        query_created = [{'$match': {'org': name, 'createdAt': {'$gte': start_date, '$lte': end_date}}},
+        query_created = [{'$match': {'org': name, 'created_at': {'$gte': start_date, '$lte': end_date}}},
                          {'$group': {
                              '_id': {
-                                 'year': {'$year': "$createdAt"},
-                                 'month': {'$month': "$createdAt"},
-                                 'day': {'$dayOfMonth': "$createdAt"},
+                                 'year': {'$year': "$created_at"},
+                                 'month': {'$month': "$created_at"},
+                                 'day': {'$dayOfMonth': "$created_at"},
                              },
                              'count': {'$sum': 1}
                          }},
                          {'$project': {'_id': 0, "year": "$_id.year", "month": "$_id.month", "day": "$_id.day",
                                        'count': 1}}
                          ]
-        query_closed = [{'$match': {'org': name, 'closedAt': {'$gte': start_date, '$lte': end_date}}},
+        query_closed = [{'$match': {'org': name, 'closed_at': {'$gte': start_date, '$lte': end_date}}},
                         {'$group': {
                             '_id': {
-                                'year': {'$year': "$closedAt"},
-                                'month': {'$month': "$closedAt"},
-                                'day': {'$dayOfMonth': "$closedAt"},
+                                'year': {'$year': "$closed_at"},
+                                'month': {'$month': "$closed_at"},
+                                'day': {'$dayOfMonth': "$closed_at"},
                             },
                             'count': {'$sum': 1}
                         }},
@@ -214,6 +214,18 @@ class OrgInfo(BaseDb):
         org_info_list[0]['db_last_updated'] = round((dt.datetime.utcnow() -
                                                      org_info_list[0]['db_last_updated']).total_seconds() / 60)
         return jsonify(org_info_list)
+
+
+class OrgLastCommits(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        projection = {"_id": 0, "repo_name": 1, "author": 1,"committed_date": 1, 'message_head_line': 1,
+                      'branch_name':  {"$slice": -1}}
+        org_last_commit_list = query_last_document_limit_(self.db, name, "Commit", projection, "committed_date", 5)
+        for org_last_commit in org_last_commit_list:
+            org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
+        return jsonify(org_last_commit_list)
 
 
 class OrgReadmeLanguage(BaseDb):
