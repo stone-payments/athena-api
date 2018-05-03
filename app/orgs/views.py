@@ -17,7 +17,7 @@ class OrgLanguages(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        query = [{'$match': {'org': name, 'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}}},
+        query = [{'$match': {'org': name}},
                  {'$unwind': "$languages"},
                  {'$group': {
                      '_id': {
@@ -287,20 +287,20 @@ class OrgHeaderInfo(BaseDb):
         start_date = dt.datetime.strptime(request.args.get("startDate"), '%Y-%m-%d')
         end_date = dt.datetime.strptime(request.args.get("endDate"), '%Y-%m-%d') + dt.timedelta(seconds=86399)
         query_repository_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
-                                          {'deleted_at': None}]}
+                                          {'org': name,'deleted_at': None}]}
         query_teams_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
-                                          {'deleted_at': None}]}
+                                          {'org': name,'deleted_at': None}]}
         query_users_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
-                                          {'deleted_at': None}]}
+                                          {'org': name,'deleted_at': None}]}
         query_commits_count = {'$or': [{'org': name, 'deleted_at': {'$gte': start_date, '$lt': end_date}},
-                                          {'deleted_at': None}]}
+                                          {'org': name,'deleted_at': None}]}
         repository_count = query_count(self.db, 'Repo', query_repository_count)
         teams_count = query_count(self.db, 'Teams', query_teams_count)
         user_count = query_count(self.db, 'Dev', query_users_count)
         commits_count = query_count(self.db, 'Commit', query_commits_count)
         print({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
                'avgCommits': commits_count})
-        if repository_count and teams_count and user_count and commits_count:
+        if query_repository_count and query_teams_count and query_users_count and query_commits_count:
             return jsonify({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
                             'avgCommits': commits_count})
         return jsonify({'users': 0, 'teams': 0, 'repositories': 0, 'avgCommits': 0})
