@@ -222,7 +222,7 @@ class OrgLastCommits(BaseDb):
         name = request.args.get("name")
         projection = {"_id": 0, "repo_name": 1, "author": 1,"committed_date": 1, 'message_head_line': 1,
                       'branch_name':  {"$slice": -1}}
-        org_last_commit_list = query_last_document_limit_(self.db, name, "Commit", projection, "committed_date", 5)
+        org_last_commit_list = query_last_document_limit_(self.db, name, "Commit", projection, "committed_date", 7)
         for org_last_commit in org_last_commit_list:
             org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
         return jsonify(org_last_commit_list)

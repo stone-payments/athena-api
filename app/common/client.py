@@ -25,3 +25,8 @@ def query_count(db, collection, query):
 def query_last_document_limit_(db, org, collection, projection, sort_document, limit):
     query_result = db[collection].find({"org": org}, projection).sort([(sort_document, DESCENDING)]).limit(limit)
     return [dict(i) for i in query_result]
+
+
+def query_last_document_limit_2(db, query, collection, projection, sort_document, limit):
+    query_result = db[collection].find(query, projection).sort([(sort_document, DESCENDING)]).limit(limit)
+    return [dict(i) for i in query_result]

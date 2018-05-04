@@ -191,3 +191,21 @@ class UserNewWork(BaseDb):
                              commits_count_list[0]['deletions']}, {'x': commits_ratio,
                                                                    'y': addittions_deletions_ratio}]])
 
+
+class UserLastCommits(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        query = {"author": name}
+        projection = {"_id": 0, "repo_name": 1, "author": 1, "committed_date": 1, 'message_head_line': 1,
+                      'branch_name':  {"$slice": -1}}
+        org_last_commit_list = query_last_document_limit_2(self.db, query, "Commit", projection, "committed_date", 7)
+        print(org_last_commit_list)
+        for org_last_commit in org_last_commit_list:
+            try:
+                org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
+            except IndexError:
+                org_last_commit['branch_name'] = None
+            org_last_commit['day'] = org_last_commit['committed_date'].strftime('%d')
+            org_last_commit['month'] = org_last_commit['committed_date'].strftime('%b')
+        return jsonify(org_last_commit_list)

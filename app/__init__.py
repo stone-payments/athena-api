@@ -12,7 +12,7 @@ def create_app(config_name):
     from app.repo.views import RepoName, RepoLanguages, RepoCommits, RepoMembers,\
         RepoBestPratices, RepoIssues
     from app.user.views import UserAvatar, UserCommit, UserContributedRepo,\
-        UserStats, UserLogin, UserTeam, UserNewWork
+        UserStats, UserLogin, UserTeam, UserNewWork, UserLastCommits
     from app.team.views import CheckWithExist, TeamCommits, TeamIssues, TeamLanguages, TeamLicense,\
         TeamName, TeamNewWork, TeamOpenSource, TeamReadme, TeamRepoMembers, ReportConsolidateReadme, ReportReadme,\
         ReportRepositoryInfo, TeamReadmeLanguages, TeamRepositoriesReadme
@@ -57,6 +57,7 @@ def create_app(config_name):
     app.add_url_rule('/user_login', view_func=UserLogin.as_view('user_login'), methods=['GET'])
     app.add_url_rule('/user_team', view_func=UserTeam.as_view('user_team'), methods=['GET'])
     app.add_url_rule('/user_new_work', view_func=UserNewWork.as_view('user_new_work'), methods=['GET'])
+    app.add_url_rule('/user_last_commit', view_func=UserLastCommits.as_view('user_last_commit'), methods=['GET'])
     # team
     app.add_url_rule('/team_check_with_exist', view_func=CheckWithExist.as_view('team_check_with_exist'),
                      methods=['GET'])
