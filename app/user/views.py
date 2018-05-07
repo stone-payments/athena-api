@@ -151,7 +151,7 @@ class UserNewWork(BaseDb):
         name = request.args.get("name")
         start_date = start_day_string_time()
         end_date = end_date_string_time()
-        query = [{'$match': {'author': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query = [{'$match': {'author': name, 'committed_date': {'$gte': start_date, '$lt': end_date}}},
                  {'$group': {
                      '_id': {'author': "$author"
                              },
@@ -165,9 +165,9 @@ class UserNewWork(BaseDb):
         query2 = [{'$match': {'author': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
                   {'$group': {
                       '_id': {
-                          'year': {'$year': "$committedDate"},
-                          'month': {'$month': "$committedDate"},
-                          'day': {'$dayOfMonth': "$committedDate"},
+                          'year': {'$year': "$committed_date"},
+                          'month': {'$month': "$committed_date"},
+                          'day': {'$dayOfMonth': "$committed_date"},
                       }
                   }}
                   ]
@@ -186,10 +186,11 @@ class UserNewWork(BaseDb):
             addittions_deletions_ratio = int((value_result / commits_count_list[0]['additions'] - 0.5) * 200)
         else:
             addittions_deletions_ratio = -100
-        return jsonify([[{'author': name, 'commits': commits_count_list[0]['commits'],
-                         'additions': commits_count_list[0]['additions'], 'deletions':
-                             commits_count_list[0]['deletions']}, {'x': commits_ratio,
-                                                                   'y': addittions_deletions_ratio}]])
+        # return jsonify([[{'author': name, 'commits': commits_count_list[0]['commits'],
+        #                  'additions': commits_count_list[0]['additions'], 'deletions':
+        #                      commits_count_list[0]['deletions']}, {'x': commits_ratio,
+        #                                                            'y': addittions_deletions_ratio}]])
+        return jsonify({'data': [commits_ratio, addittions_deletions_ratio, commits_count_list[0]['commits'], name]})
 
 
 class UserLastCommits(BaseDb):
