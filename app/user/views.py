@@ -162,7 +162,7 @@ class UserNewWork(BaseDb):
                  {'$project': {'_id': 0, 'author': '$_id.author',
                                'additions': '$additions', 'deletions': '$deletions', 'commits': '$commits'}}
                  ]
-        query2 = [{'$match': {'author': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query2 = [{'$match': {'author': name, 'committed_date': {'$gte': start_date, '$lt': end_date}}},
                   {'$group': {
                       '_id': {
                           'year': {'$year': "$committed_date"},
@@ -177,7 +177,7 @@ class UserNewWork(BaseDb):
         all_days = [start_date + dt.timedelta(days=x) for x in range((end_date - start_date).days + 1)]
         working_days = sum(1 for d in all_days if d.weekday() < 5)
         if not commits_count_list:
-            return json.dumps([[{'author': name, 'commits': 0, 'additions': 0, 'deletions': 0}, {'x': -100, 'y': 0}]])
+            return jsonify({'data': [-100, 0, 0, name]})
         commits_ratio = int((total_days_count / working_days - 0.5) * 2 * 100)
         if commits_ratio >= 100:
             commits_ratio = 100
@@ -186,10 +186,6 @@ class UserNewWork(BaseDb):
             addittions_deletions_ratio = int((value_result / commits_count_list[0]['additions'] - 0.5) * 200)
         else:
             addittions_deletions_ratio = -100
-        # return jsonify([[{'author': name, 'commits': commits_count_list[0]['commits'],
-        #                  'additions': commits_count_list[0]['additions'], 'deletions':
-        #                      commits_count_list[0]['deletions']}, {'x': commits_ratio,
-        #                                                            'y': addittions_deletions_ratio}]])
         return jsonify({'data': [commits_ratio, addittions_deletions_ratio, commits_count_list[0]['commits'], name]})
 
 
@@ -200,8 +196,7 @@ class UserLastCommits(BaseDb):
         query = {"author": name}
         projection = {"_id": 0, "repo_name": 1, "author": 1, "committed_date": 1, 'message_head_line': 1,
                       'branch_name':  {"$slice": -1}}
-        org_last_commit_list = query_last_document_limit_2(self.db, query, "Commit", projection, "committed_date", 7)
-        print(org_last_commit_list)
+        org_last_commit_list = query_last_document_limit_2(self.db, query, "Commit", projection, "committed_date", 6)
         for org_last_commit in org_last_commit_list:
             try:
                 org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
