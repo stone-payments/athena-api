@@ -25,12 +25,12 @@ class UserCommit(BaseDb):
         name = request.args.get("name")
         start_date = start_day_string_time()
         end_date = end_date_string_time()
-        query = [{'$match': {'author': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query = [{'$match': {'author': name, 'committed_date': {'$gte': start_date, '$lt': end_date}}},
                  {'$group': {
                      '_id': {
-                         'year': {'$year': "$committedDate"},
-                         'month': {'$month': "$committedDate"},
-                         'day': {'$dayOfMonth': "$committedDate"},
+                         'year': {'$year': "$committed_date"},
+                         'month': {'$month': "$committed_date"},
+                         'day': {'$dayOfMonth': "$committed_date"},
                      },
                      'count': {'$sum': 1}
                  }},

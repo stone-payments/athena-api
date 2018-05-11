@@ -31,7 +31,6 @@ def create_app(config_name):
                      methods=['GET'])
     app.add_url_rule('/org_license', view_func=OrgLicense.as_view('org_license'), methods=['GET'])
     app.add_url_rule('/org_issues', view_func=OrgIssues.as_view('org_issues'), methods=['GET'])
-    OrgLastCommits
     app.add_url_rule('/org_info', view_func=OrgInfo.as_view('org_info'), methods=['GET'])
     app.add_url_rule('/org_readme_languages', view_func=OrgReadmeLanguage.as_view('org_readme_languages'),
                      methods=['GET'])
@@ -50,7 +49,7 @@ def create_app(config_name):
     app.add_url_rule('/repo_issues', view_func=RepoIssues.as_view('repo_issues'), methods=['GET'])
     # user
     app.add_url_rule('/user_avatar', view_func=UserAvatar.as_view('user_avatar'), methods=['GET'])
-    app.add_url_rule('/user_commit', view_func=UserCommit.as_view('user_commit'), methods=['GET'])
+    app.add_url_rule('/user_commits', view_func=UserCommit.as_view('user_commits'), methods=['GET'])
     app.add_url_rule('/user_contributed_repo', view_func=UserContributedRepo.as_view('user_contributed_repo'),
                      methods=['GET'])
     app.add_url_rule('/user_stats', view_func=UserStats.as_view('user_stats'), methods=['GET'])
