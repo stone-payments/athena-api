@@ -205,3 +205,36 @@ class UserLastCommits(BaseDb):
             org_last_commit['day'] = org_last_commit['committed_date'].strftime('%d')
             org_last_commit['month'] = org_last_commit['committed_date'].strftime('%b')
         return jsonify(org_last_commit_list)
+
+
+class UserWorkedRepository(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        repo_id = query_find_to_dictionary_distinct(self.db, 'Commit', 'repository_id', {'author': name})
+        total_commits = [{'$match': {'repository_id': {'$in': repo_id}}},
+                 {'$group': {
+                     '_id': {
+                         'repo_name': "$repo_name",
+                     },
+                     'total': {'$sum': 1}
+                 }},
+                 {'$sort': {'_id.repo_name': -1}},
+                 {'$project': {'_id': 0,  "repo_name": "$_id.repo_name", 'total': 1}},
+                 ]
+        total_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', total_commits)
+        user_commits = [{'$match': {'author': name,'repository_id': {'$in': repo_id}}},
+                 {'$group': {
+                     '_id': {
+                         'repo_name': "$repo_name",
+                         'author':'$author'
+                     },
+                     'user_total': {'$sum': 1}
+                 }},
+                 {'$sort': {'_id.repo_name': -1}},
+
+                 {'$project': {'_id': 0, "author": "$_id.author", "repo_name": "$_id.repo_name", 'user_total': 1}},
+                 ]
+        user_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', user_commits)
+        response = [{'repo_name': k1['repo_name'], 'value': str(int(k2['user_total']/k1['total']*100))} for k1, k2 in zip(total_commits_count, user_commits_count)]
+        return jsonify(response)

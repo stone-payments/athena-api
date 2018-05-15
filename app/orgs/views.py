@@ -47,17 +47,17 @@ class OrgOpenSource(BaseDb):
                  }},
                  {'$sort': {'_id.openSource': 1}},
                  {'$unwind': "$_id.openSource"},
-                 {'$project': {'_id': 0, "status": "$_id.openSource", 'count': 1}}
+                 {'$project': {'_id': 0, "name": "$_id.openSource", 'value': '$count'}}
                  ]
         open_source_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
-        result_sum = sum([license_type['count'] for license_type in open_source_type_list])
+        result_sum = sum([license_type['value'] for license_type in open_source_type_list])
         for open_source_status in open_source_type_list:
-            if open_source_status['status'] is None:
-                open_source_status['status'] = 'None'
-            open_source_status['count'] = round(int(open_source_status['count']) / result_sum * 100, 1)
+            if open_source_status['name'] is None:
+                open_source_status['name'] = 'None'
+            open_source_status['value'] = round(int(open_source_status['value']) / result_sum * 100, 1)
         if len(open_source_type_list) < 2:
             find_key(open_source_type_list, [True, False])
-        open_source_type_list = sorted(open_source_type_list, key=itemgetter('status'), reverse=False)
+        open_source_type_list = sorted(open_source_type_list, key=itemgetter('name'), reverse=False)
         return jsonify(open_source_type_list)
 
 
@@ -99,17 +99,17 @@ class OrgReadme(BaseDb):
                      'count': {'$sum': 1}
                  }},
                  {'$sort': {'_id.status': -1}},
-                 {'$project': {'_id': 0, "status": "$_id.status", 'count': 1}}
+                 {'$project': {'_id': 0, "name": "$_id.status", 'value': '$count'}}
                  ]
         readme_status_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
-        result_sum = sum([readme_status['count'] for readme_status in readme_status_list])
+        result_sum = sum([readme_status['value'] for readme_status in readme_status_list])
         for readme_status in readme_status_list:
-            if readme_status['status'] is None:
-                readme_status['status'] = 'None'
-            readme_status['count'] = round(int(readme_status['count']) / result_sum * 100, 1)
+            if readme_status['name'] is None:
+                readme_status['name'] = 'None'
+            readme_status['value'] = round(int(readme_status['value']) / result_sum * 100, 1)
         if len(readme_status_list) < 3:
             find_key(readme_status_list, ['None', 'Poor', 'OK'])
-        readme_status_list = sorted(readme_status_list, key=itemgetter('status'), reverse=True)
+        readme_status_list = sorted(readme_status_list, key=itemgetter('name'), reverse=True)
         return jsonify(readme_status_list)
 
 
@@ -127,7 +127,7 @@ class OrgOpenSourceReadme(BaseDb):
                 'count': {'$sum': 1}
             }},
             {'$sort': {'_id.status': -1}},
-            {'$project': {'_id': 0, "status": "$_id.status", 'count': 1}}
+            {'$project': {'_id': 0, "status": "$_id.status",  'count': 1}}
             ]
         readme_status_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
         result_sum = sum([readme_status['count'] for readme_status in readme_status_list])
@@ -268,16 +268,16 @@ class OrgOpenSourceReadmeLanguage(BaseDb):
                 'count': {'$sum': 1}
             }},
             {'$sort': {'_id.status': -1}},
-            {'$project': {'_id': 0, "status": "$_id.status", 'count': 1}}
+            {'$project': {'_id': 0, "name": "$_id.status", "value": '$count'}}
             ]
         license_type_list = query_aggregate_to_dictionary(self.db, 'Repo', query)
 
         if not license_type_list:
-            return jsonify([{'status': 'None', 'count': 100.0}])
-        result_sum = sum([license_type['count'] for license_type in license_type_list])
+            return jsonify([{'name': 'None', 'value': 100.0}])
+        result_sum = sum([license_type['value'] for license_type in license_type_list])
         for license_type in license_type_list:
-            license_type['count'] = round(int(license_type['count']) / result_sum * 100, 1)
-        license_type_list = sorted(license_type_list, key=itemgetter('count'), reverse=True)
+            license_type['value'] = round(int(license_type['value']) / result_sum * 100, 1)
+        license_type_list = sorted(license_type_list, key=itemgetter('value'), reverse=True)
         return jsonify(license_type_list)
 
 

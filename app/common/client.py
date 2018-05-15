@@ -1,5 +1,6 @@
 from pymongo import DESCENDING
 
+
 def query_find_to_dictionary(db, collection, query, projection):
     query_result = db[collection].find(query, projection)
     return [dict(i) for i in query_result]
@@ -7,6 +8,10 @@ def query_find_to_dictionary(db, collection, query, projection):
 
 def query_find(db, collection, query, projection):
     return db[collection].find(query, projection)
+
+
+def query_aggregate(db, collection, query):
+    return db[collection].aggregate(query)
 
 
 def query_aggregate_to_dictionary(db, collection, query):
