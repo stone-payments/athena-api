@@ -32,12 +32,12 @@ class RepoCommits(BaseDb):
         org = request.args.get("org")
         start_date = start_day_string_time()
         end_date = end_date_string_time()
-        query = [{'$match': {'org': org, 'repoName': name, 'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query = [{'$match': {'org': org, 'repo_name': name, 'committed_date': {'$gte': start_date, '$lt': end_date}}},
                  {'$group': {
                      '_id': {
-                         'year': {'$year': "$committedDate"},
-                         'month': {'$month': "$committedDate"},
-                         'day': {'$dayOfMonth': "$committedDate"},
+                         'year': {'$year': "$committed_date"},
+                         'month': {'$month': "$committed_date"},
+                         'day': {'$dayOfMonth': "$committed_date"},
                      },
                      'count': {'$sum': 1}
                  }},
@@ -45,6 +45,7 @@ class RepoCommits(BaseDb):
                  ]
         delta = end_date - start_date
         commits_count_list = query_aggregate_to_dictionary(self.db, 'Commit', query)
+        print(commits_count_list)
         for commit_count in commits_count_list:
             commit_count['date'] = dt.datetime(commit_count['year'], commit_count['month'], commit_count['day'], 0, 0)
         days = [start_date + dt.timedelta(days=i) for i in range(delta.days + 1)]
@@ -69,17 +70,16 @@ class RepoBestPratices(BaseDb):
     def get(self):
         name = request.args.get("name")
         org = str(request.args.get("org"))
-        db_last_updated = dt.datetime.utcnow() + dt.timedelta(hours=-5)
-        query = {'org': org, 'repoName': name, 'db_last_updated': {'$gte': db_last_updated}}
-        projection = {'_id': 0, 'repoName': 1, 'forks': 1, 'stargazers': 1, 'openSource': 1, 'licenseType': 1,
-                      'readme': 1, 'readmeLanguage': 1,
-                      'db_last_updated': 1, 'description': 1}
-        query_result = query_find_to_dictionary(self.db, 'Repo', query, projection)
+        query = [{'$match': {'org': org, 'repo_name': name}},
+                 {'$project': {'_id': 0, 'contributing': 1, 'readme': 1, 'readme_language': 1, 'license_type': 1,
+                               'opensource': {'$slice': ["$open_source.status", -1]}}},
+                 {'$unwind': "$opensource"},
+                 ]
+        query_result = query_aggregate_to_dictionary(self.db, 'Repo', query)
         if not query_result:
-            return json.dumps([{'response': 404}])
-        query_result[0]['db_last_updated'] = round((dt.datetime.utcnow() -
-                                                    query_result[0]['db_last_updated']).total_seconds() / 60)
-        return jsonify(query_result)
+            return jsonify({'_id': '-', 'contributing': '-', 'readme': '-', 'readme_language': '-', 'license_type': '-',
+                           'opensource': '-'})
+        return jsonify(query_result[0])
 
 
 class RepoIssues(BaseDb):
