@@ -80,7 +80,7 @@ def name_regex_search(db, collection_name, document_name):
     name = "^" + str(request.args.get("name"))
     compiled_name = re.compile(r'%s' % name, re.I)
     query_result = db[collection_name].aggregate([{'$match': {document_name: {'$regex': compiled_name}}},{'$limit' : 5},
-                                             {'$project': {'_id': 0, 'value': '$login', 'data': '$login'}}])
+                                             {'$project': {'_id': 0, 'value': f"${document_name}", 'data': f"${document_name}"}}])
     result = [dict(i) for i in query_result]
     if not query_result:
         return jsonify([{'response': 404}])
@@ -89,16 +89,15 @@ def name_regex_search(db, collection_name, document_name):
 
 def name_and_org_regex_search(db, collection_name, document_name):
     org = str(request.args.get("org"))
-    db_last_updated = dt.datetime.utcnow() + dt.timedelta(hours=-5)
     name = "^" + str(request.args.get("name"))
     compiled_name = re.compile(r'%s' % name, re.I)
-    query_result = db[collection_name].find({'org': org, 'db_last_updated': {'$gte': db_last_updated},
-                                             document_name: {'$regex': compiled_name}},
-                                            {'_id': 0, document_name: 1}).limit(6)
+    query_result = db[collection_name].aggregate([{'$match': {'org': org, document_name: {'$regex': compiled_name}}}, {'$limit': 5},
+                                                  {'$project': {'_id': 0, 'value': f"${document_name}",
+                                                                'data': f"${document_name}"}}])
     result = [dict(i) for i in query_result]
     if not query_result:
-        return json.dumps([{'response': 404}])
-    return json.dumps(result)
+        return jsonify([{'response': 404}])
+    return jsonify({'suggestions': result})
 
 
 def last_updated_at(query):

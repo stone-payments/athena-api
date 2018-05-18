@@ -7,7 +7,7 @@ from app.common.db import BaseDb
 class RepoName(BaseDb):
 
     def get(self):
-        return name_and_org_regex_search(self.db, 'Repo', 'repoName')
+        return name_and_org_regex_search(self.db, 'Repo', 'repo_name')
 
 
 class RepoLanguages(BaseDb):
@@ -45,7 +45,6 @@ class RepoCommits(BaseDb):
                  ]
         delta = end_date - start_date
         commits_count_list = query_aggregate_to_dictionary(self.db, 'Commit', query)
-        print(commits_count_list)
         for commit_count in commits_count_list:
             commit_count['date'] = dt.datetime(commit_count['year'], commit_count['month'], commit_count['day'], 0, 0)
         days = [start_date + dt.timedelta(days=i) for i in range(delta.days + 1)]
