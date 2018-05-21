@@ -15,14 +15,19 @@ class RepoLanguages(BaseDb):
     def get(self):
         name = request.args.get("name")
         org = str(request.args.get("org"))
-        query = {'org': org, 'repoName': name}
-        projection = {"languages": 1, "_id": 0}
-        result = query_find_to_dictionary(self.db, 'Repo', query, projection)
+        query = [{'$match': {'org': org, 'repo_name': name}},
+                 {'$project': {'_id': 0,  "languages":1, "size": 1}},{'$unwind': "$languages"},
+                 {'$project': {'_id': 0,  "name": "$languages.language", "value":"$languages.size"}}
+                 ]
+        result = query_aggregate_to_dictionary(self.db, 'Repo', query)
         if not result:
             return json.dumps([{'response': 404}])
-        result = (result[0]['languages'])
-        result = sorted(result, key=itemgetter('size'), reverse=True)
-        return jsonify(result)
+        result = sorted(result, key=itemgetter('value'), reverse=True)
+        if len(result) > 4:
+            new_result = result[:4]
+            new_result.append({"name": "Others", "value": round(sum(item['value'] for item in result[4:]), 2)})
+            return jsonify(new_result)
+        return jsonify(result[:4])
 
 
 class RepoCommits(BaseDb):
@@ -56,12 +61,38 @@ class RepoMembers(BaseDb):
 
     def get(self):
         name = request.args.get("name")
-        org = str(request.args.get("org"))
-        query = {'org': org, 'repoName': name, 'author': {'$ne': None}}
-        projection = {'_id': 0, 'author': 1}
-        query_result = query_find(self.db, 'Commit', query, projection).distinct("author")
-        query_result = sorted(query_result, key=lambda x: x.lower(), reverse=False)
-        return jsonify(query_result)
+        org = request.args.get("org")
+        start_date = start_day_string_time()
+        end_date = end_date_string_time()
+        total_commits = [{'$match': {'committed_date': {'$gte': start_date, '$lt': end_date},
+                                     'repo_name': name, 'org': org}},
+                 {'$group': {
+                     '_id': {
+                         'repo_name': "$repo_name",
+                     },
+                     'total': {'$sum': 1}
+                 }},
+                 {'$sort': {'_id.repo_name': -1}},
+                 {'$project': {'_id': 0,  "repo_name": "$_id.repo_name", 'total': 1}},
+                 ]
+        total_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', total_commits)
+        user_commits = [{'$match': {'committed_date': {'$gte': start_date, '$lt': end_date}, 'repo_name': name,
+                                    'org': org}},
+                 {'$group': {
+                     '_id': {
+                         'repo_name': "$repo_name",
+                         'author':'$author'
+                     },
+                     'user_total': {'$sum': 1}
+                 }},
+                 {'$sort': {'_id.repo_name': -1}},
+                 {'$project': {'_id': 0, "author": "$_id.author", "repo_name": "$_id.repo_name", 'user_total': 1}},
+                 ]
+        user_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', user_commits)
+        total = sum(x["user_total"] for x in user_commits_count)
+        response = [{'name': k1['author'], 'value': int(k1['user_total']/total*100)} for k1 in user_commits_count]
+        response = sorted(response, key=lambda x: x['value'], reverse=True)
+        return jsonify(response)
 
 
 class RepoBestPratices(BaseDb):
@@ -119,3 +150,22 @@ class RepoIssues(BaseDb):
         closed_issues_list = accumulator(closed_issues_list)
         response = [closed_issues_list, created_issues_list]
         return jsonify(response)
+
+
+class RepoLastCommits(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        org = request.args.get("org")
+        query = {"repo_name": name, "org": org}
+        projection = {"_id": 0, "repo_name": 1, "author": 1, "committed_date": 1, 'message_head_line': 1,
+                      'branch_name':  {"$slice": -1}}
+        org_last_commit_list = query_last_document_limit_2(self.db, query, "Commit", projection, "committed_date", 6)
+        for org_last_commit in org_last_commit_list:
+            try:
+                org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
+            except IndexError:
+                org_last_commit['branch_name'] = None
+            org_last_commit['day'] = org_last_commit['committed_date'].strftime('%d')
+            org_last_commit['month'] = org_last_commit['committed_date'].strftime('%b')
+        return jsonify(org_last_commit_list)

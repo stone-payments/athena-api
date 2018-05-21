@@ -238,12 +238,9 @@ class UserWorkedRepository(BaseDb):
                      'user_total': {'$sum': 1}
                  }},
                  {'$sort': {'_id.repo_name': -1}},
-
                  {'$project': {'_id': 0, "author": "$_id.author", "repo_name": "$_id.repo_name", 'user_total': 1}},
                  ]
         user_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', user_commits)
-        print(total_commits_count)
-        print(user_commits_count)
-        response = [{'repo_name': k1['repo_name'], 'value': int(k2['user_total']/k1['total']*100)} for k1, k2 in zip(total_commits_count, user_commits_count)]
+        response = [{'name': k1['repo_name'], 'value': int(k2['user_total']/k1['total']*100)} for k1, k2 in zip(total_commits_count, user_commits_count)]
         response = sorted(response, key=lambda x: x['value'], reverse=True)
         return jsonify(response)

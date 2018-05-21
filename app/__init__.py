@@ -10,7 +10,7 @@ def create_app(config_name):
         OrgOpenSource, OrgCommits, OrgReadme, OrgOpenSourceReadme, OrgLicense, OrgIssues, OrgInfo, OrgReadmeLanguage,\
         OrgOpenSourceReadmeLanguage, OrgHeaderInfo, OrgLastCommits
     from app.repo.views import RepoName, RepoLanguages, RepoCommits, RepoMembers,\
-        RepoBestPratices, RepoIssues
+        RepoBestPratices, RepoIssues, RepoLastCommits
     from app.user.views import UserAvatar, UserCommit, UserContributedRepo,\
         UserStats, UserLogin, UserTeam, UserNewWork, UserLastCommits, UserWorkedRepository
     from app.team.views import CheckWithExist, TeamCommits, TeamIssues, TeamLanguages, TeamLicense,\
@@ -47,6 +47,7 @@ def create_app(config_name):
     app.add_url_rule('/repo_best_practices', view_func=RepoBestPratices.as_view('repo_best_practices'),
                      methods=['GET'])
     app.add_url_rule('/repo_issues', view_func=RepoIssues.as_view('repo_issues'), methods=['GET'])
+    app.add_url_rule('/repo_last_commit', view_func=RepoLastCommits.as_view('repo_last_commit'), methods=['GET'])
     # user
     app.add_url_rule('/user_avatar', view_func=UserAvatar.as_view('user_avatar'), methods=['GET'])
     app.add_url_rule('/user_commits', view_func=UserCommit.as_view('user_commits'), methods=['GET'])
