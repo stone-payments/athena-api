@@ -26,13 +26,10 @@ class TeamLanguages(BaseDb):
         org = request.args.get("org")
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
-                                           {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'slug': name, 'org': org},
                                            {'_id': '_id'})
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
-                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team',
-                                                          'data.db_last_updated': {
-                                                              '$gte': utc_time_datetime_format(since_hour_delta)}})
+                                                         {'to': id_team[0]['_id'], "type": 'repo_to_team'})
         query = [
             {
                 '$match':
@@ -48,16 +45,23 @@ class TeamLanguages(BaseDb):
             }},
             {'$sort': {'count': -1}},
             {'$limit': 12},
-            {'$project': {"language": "$_id.language", "_id": 0, 'count': 1}}
+            {'$project': {"name": "$_id.language", "_id": 0, 'value': '$count'}}
         ]
         query_result = self.db.Repo.aggregate(query)
-        readme_status_list = [dict(i) for i in query_result]
-        soma = sum([readme_status['count'] for readme_status in readme_status_list])
-        for readme_status in readme_status_list:
-            if readme_status['language'] is None:
-                readme_status['language'] = 'None'
-            readme_status['count'] = round(int(readme_status['count']) / soma * 100, 1)
-        return jsonify(readme_status_list)
+        result = [dict(i) for i in query_result]
+        if not result:
+            return jsonify([{"name": "None", "value": 100}])
+        soma = sum([readme_status['value'] for readme_status in result])
+        for readme_status in result:
+            if readme_status['name'] is None:
+                readme_status['name'] = 'None'
+            readme_status['value'] = round(int(readme_status['value']) / soma * 100, 1)
+        result = sorted(result, key=itemgetter('value'), reverse=True)
+        if len(result) > 4:
+            new_result = result[:4]
+            new_result.append({"name": "Others", "value": round(sum(item['value'] for item in result[4:]), 2)})
+            return jsonify(new_result)
+        return jsonify(result[:4])
 
 
 class TeamOpenSource(BaseDb):
@@ -247,16 +251,7 @@ class TeamRepoMembers(BaseDb):
 class TeamName(BaseDb):
 
     def get(self):
-        name = "^" + str(request.args.get("name"))
-        org = request.args.get("org")
-        compiled_name = re.compile(r'%s' % name, re.I)
-        query_result = self.db['Teams'].find({'slug': {'$regex': compiled_name}, 'org': org,
-                                              'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
-                                             {'_id': 0, 'slug': 1}).limit(6)
-        result = [dict(i) for i in query_result]
-        if not query_result:
-            return jsonify([{'response': 404}])
-        return jsonify(result)
+        return name_and_org_regex_search(self.db, 'Teams', 'slug')
 
 
 class TeamCommits(BaseDb):
@@ -270,13 +265,13 @@ class TeamCommits(BaseDb):
         id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team'})
-        query = [{'$match': {'devId': {'$in': dev_id_list},
-                             'committedDate': {'$gte': start_date, '$lt': end_date}}},
+        query = [{'$match': {'dev_id': {'$in': dev_id_list},
+                             'committed_date': {'$gte': start_date, '$lt': end_date}}},
                  {'$group': {
                      '_id': {
-                         'year': {'$year': "$committedDate"},
-                         'month': {'$month': "$committedDate"},
-                         'day': {'$dayOfMonth': "$committedDate"},
+                         'year': {'$year': "$committed_date"},
+                         'month': {'$month': "$committed_date"},
+                         'day': {'$dayOfMonth': "$committed_date"},
                      },
                      'count': {'$sum': 1}
                  }},
@@ -304,14 +299,14 @@ class TeamIssues(BaseDb):
         repo_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                          {'to': id_team[0]['_id'], "type": 'repo_to_team'})
         query_created = [
-            {'$match': {'repositoryId': {'$in': repo_id_list},
-                        'createdAt': {'$gte': start_date,
+            {'$match': {'repository_id': {'$in': repo_id_list},
+                        'created_at': {'$gte': start_date,
                                       '$lt': end_date}}},
             {'$group': {
                 '_id': {
-                    'year': {'$year': "$createdAt"},
-                    'month': {'$month': "$createdAt"},
-                    'day': {'$dayOfMonth': "$createdAt"},
+                    'year': {'$year': "$created_at"},
+                    'month': {'$month': "$created_at"},
+                    'day': {'$dayOfMonth': "$created_at"},
                 },
                 'count': {'$sum': 1}
             }},
@@ -321,14 +316,14 @@ class TeamIssues(BaseDb):
         ]
 
         query_closed = [
-            {'$match': {'repositoryId': {'$in': repo_id_list},
-                        'closedAt': {'$gte': start_date,
+            {'$match': {'repository_id': {'$in': repo_id_list},
+                        'closed_at': {'$gte': start_date,
                                      '$lt': end_date}}},
             {'$group': {
                 '_id': {
-                    'year': {'$year': "$closedAt"},
-                    'month': {'$month': "$closedAt"},
-                    'day': {'$dayOfMonth': "$closedAt"},
+                    'year': {'$year': "$closed_at"},
+                    'month': {'$month': "$closed_at"},
+                    'day': {'$dayOfMonth': "$closed_at"},
                 },
                 'count': {'$sum': 1}
             }},
@@ -354,8 +349,8 @@ class TeamNewWork(BaseDb):
 
         def query_id_name(id_name):
             query_1_2 = [
-                {'$match': {'devId': {'$in': id_name},
-                            'committedDate': {'$gte': start_date,
+                {'$match': {'dev_id': {'$in': id_name},
+                            'committed_date': {'$gte': start_date,
                                               '$lt': end_date}}},
                 {'$group': {
                     '_id': {'author': "$author"
@@ -372,15 +367,15 @@ class TeamNewWork(BaseDb):
 
         def query_id_name2(id_name):
             query_1_2 = [
-                {'$match': {'devId': {'$in': id_name},
-                            'committedDate': {'$gte': start_date,
+                {'$match': {'dev_id': {'$in': id_name},
+                            'committed_date': {'$gte': start_date,
                                               '$lt': end_date}}},
                 {'$group': {
                     '_id': {
                         'author': "$author",
-                        'year': {'$year': "$committedDate"},
-                        'month': {'$month': "$committedDate"},
-                        'day': {'$dayOfMonth': "$committedDate"},
+                        'year': {'$year': "$committed_date"},
+                        'month': {'$month': "$committed_date"},
+                        'day': {'$dayOfMonth': "$committed_date"},
                     }
                 }},
                 {'$group': {
@@ -395,9 +390,7 @@ class TeamNewWork(BaseDb):
 
         id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
         id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
-                                                    {'to': id_team[0]['_id'], "type": 'dev_to_team',
-                                                     'data.db_last_updated': {
-                                                         '$gte': utc_time_datetime_format(since_hour_delta)}})
+                                                    {'to': id_team[0]['_id'], "type": 'dev_to_team'})
 
         commits_count_list = query_id_name(id_list)
         total_days_count = query_id_name2(id_list)
@@ -414,14 +407,17 @@ class TeamNewWork(BaseDb):
                 additions_deletions_ratio = int((value_result / user['additions'] - 0.5) * 200)
             else:
                 additions_deletions_ratio = -100
-            response.append([{'author': user['author'], 'commits': user['commits'], 'additions': user['additions'],
-                              'deletions': user['deletions']}, {'x': commits_ratio, 'y': additions_deletions_ratio}])
+            # response.append([{'author': user['author'], 'commits': user['commits'], 'additions': user['additions'],
+            #                   'deletions': user['deletions']}, {'x': commits_ratio, 'y': additions_deletions_ratio}])
+            response.append([commits_ratio, additions_deletions_ratio, user['commits'], user['author']])
+        print(response)
         if response:
-            average_x = int(sum([x[1]['x'] for x in response]) / len(response))
-            average_y = int(sum([x[1]['y'] for x in response]) / len(response))
-            return jsonify([response, {'x': average_x, 'y': average_y}])
+            # average_x = int(sum([x['data'][0] for x in response]) / len(response))
+            # average_y = int(sum([x['data'][1] for x in response]) / len(response))
+            return jsonify({'data': response})
         else:
             return jsonify([response, {'x': 0, 'y': 0}])
+        # return jsonify({'data': [commits_ratio, addittions_deletions_ratio, commits_count_list[0]['commits'], name]})
 
 
 class ReportConsolidateReadme(BaseDb):
@@ -601,3 +597,40 @@ class TeamRepositoriesReadme(BaseDb):
         print(query_result)
         query_result = sorted(query_result, key=lambda x: x['repoName'].lower(), reverse=False)
         return jsonify(query_result)
+
+
+class TeamLastCommits(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        org = request.args.get("org")
+
+        id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
+        dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team'})
+        # query = [{'$match': {'dev_id': {'$in': dev_id_list}}},
+        #          {'$group': {
+        #              '_id': {
+        #                  'year': {'$year': "$committed_date"},
+        #                  'month': {'$month': "$committed_date"},
+        #                  'day': {'$dayOfMonth': "$committed_date"},
+        #              },
+        #              'count': {'$sum': 1}
+        #          }},
+        #          {'$project': {"_id": 0, "year": "$_id.year", "month": "$_id.month",
+        #                        "day": "$_id.day",
+        #                        'count': 1}}]
+        # count_list = query_aggregate_to_dictionary(self.db, 'Commit', query)
+
+        query = {'dev_id': {'$in': dev_id_list}}
+        projection = {"_id": 0, "repo_name": 1, "author": 1, "committed_date": 1, 'message_head_line': 1,
+                      'branch_name':  {"$slice": -1}}
+        org_last_commit_list = query_last_document_limit_2(self.db, query, "Commit", projection, "committed_date", 6)
+        for org_last_commit in org_last_commit_list:
+            try:
+                org_last_commit['branch_name'] = org_last_commit["branch_name"][0]
+            except IndexError:
+                org_last_commit['branch_name'] = None
+            org_last_commit['day'] = org_last_commit['committed_date'].strftime('%d')
+            org_last_commit['month'] = org_last_commit['committed_date'].strftime('%b')
+        return jsonify(org_last_commit_list)

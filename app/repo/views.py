@@ -21,7 +21,7 @@ class RepoLanguages(BaseDb):
                  ]
         result = query_aggregate_to_dictionary(self.db, 'Repo', query)
         if not result:
-            return json.dumps([{'response': 404}])
+            return json.dumps([{"name": "None", "value": 100}])
         result = sorted(result, key=itemgetter('value'), reverse=True)
         if len(result) > 4:
             new_result = result[:4]
@@ -121,23 +121,23 @@ class RepoIssues(BaseDb):
         end_date = dt.datetime.strptime(request.args.get("endDate"), '%Y-%m-%d') + dt.timedelta(seconds=86399)
         delta = end_date - start_date
         query_created = [
-            {'$match': {'org': org, 'repoName': name, 'createdAt': {'$gte': start_date, '$lte': end_date}}},
+            {'$match': {'org': org, 'repo_name': name, 'created_at': {'$gte': start_date, '$lte': end_date}}},
             {'$group': {
                 '_id': {
-                    'year': {'$year': "$createdAt"},
-                    'month': {'$month': "$createdAt"},
-                    'day': {'$dayOfMonth': "$createdAt"},
+                    'year': {'$year': "$created_at"},
+                    'month': {'$month': "$created_at"},
+                    'day': {'$dayOfMonth': "$created_at"},
                 },
                 'count': {'$sum': 1}
             }},
             {'$project': {'_id': 0, "year": "$_id.year", "month": "$_id.month", "day": "$_id.day", 'count': 1}}
             ]
-        query_closed = [{'$match': {'org': org, 'repoName': name, 'closedAt': {'$gte': start_date, '$lte': end_date}}},
+        query_closed = [{'$match': {'org': org, 'repo_name': name, 'closed_at': {'$gte': start_date, '$lte': end_date}}},
                         {'$group': {
                             '_id': {
-                                'year': {'$year': "$closedAt"},
-                                'month': {'$month': "$closedAt"},
-                                'day': {'$dayOfMonth': "$closedAt"},
+                                'year': {'$year': "$closed_at"},
+                                'month': {'$month': "$closed_at"},
+                                'day': {'$dayOfMonth': "$closed_at"},
                             },
                             'count': {'$sum': 1}
                         }},
@@ -145,6 +145,7 @@ class RepoIssues(BaseDb):
                                       'count': 1}}
                         ]
         created_issues_list = process_data(self.db, 'Issue', query_created, delta, start_date)
+        print(created_issues_list)
         created_issues_list = accumulator(created_issues_list)
         closed_issues_list = process_data(self.db, 'Issue', query_closed, delta, start_date)
         closed_issues_list = accumulator(closed_issues_list)
