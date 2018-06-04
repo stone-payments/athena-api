@@ -407,17 +407,11 @@ class TeamNewWork(BaseDb):
                 additions_deletions_ratio = int((value_result / user['additions'] - 0.5) * 200)
             else:
                 additions_deletions_ratio = -100
-            # response.append([{'author': user['author'], 'commits': user['commits'], 'additions': user['additions'],
-            #                   'deletions': user['deletions']}, {'x': commits_ratio, 'y': additions_deletions_ratio}])
             response.append([commits_ratio, additions_deletions_ratio, user['commits'], user['author']])
-        print(response)
         if response:
-            # average_x = int(sum([x['data'][0] for x in response]) / len(response))
-            # average_y = int(sum([x['data'][1] for x in response]) / len(response))
             return jsonify({'data': response})
         else:
             return jsonify([response, {'x': 0, 'y': 0}])
-        # return jsonify({'data': [commits_ratio, addittions_deletions_ratio, commits_count_list[0]['commits'], name]})
 
 
 class ReportConsolidateReadme(BaseDb):
