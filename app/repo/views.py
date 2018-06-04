@@ -27,7 +27,7 @@ class RepoLanguages(BaseDb):
                  ]
         result = query_aggregate_to_dictionary(self.db, 'Repo', query)
         if not result:
-            return json.dumps([{"name": "None", "value": 100}])
+            return jsonify([{"name": "None", "value": 100}])
         result = sorted(result, key=itemgetter('value'), reverse=True)
         if len(result) > 4:
             new_result = result[:4]
@@ -100,10 +100,10 @@ class RepoBestPratices(BaseDb):
                  {'$unwind': "$opensource"},
                  ]
         query_result = query_aggregate_to_dictionary(self.db, 'Repo', query)
-        if not query_result:
-            return jsonify({'_id': '-', 'contributing': '-', 'readme': '-', 'readme_language': '-', 'license_type': '-',
-                           'opensource': '-'})
-        return jsonify(query_result[0])
+        if query_result:
+            return jsonify(query_result[0])
+        return jsonify({'_id': '-', 'contributing': '-', 'readme': '-', 'readme_language': '-', 'license_type': '-',
+                       'opensource': '-'})
 
 
 class RepoIssues(BaseDb):

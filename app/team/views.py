@@ -230,13 +230,12 @@ class TeamRepoMembers(BaseDb):
         org = request.args.get("org")
         name = request.args.get("name")
         id_team = query_find_to_dictionary(self.db, 'Teams',
-                                           {'slug': name, 'org': org,
-                                            'db_last_updated': {'$gte': utc_time_datetime_format(since_hour_delta)}},
+                                           {'slug': name, 'org': org},
                                            {'_id': '_id'})
+        print(id_team)
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
-                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team',
-                                                         'data.db_last_updated': {
-                                                             '$gte': utc_time_datetime_format(since_hour_delta)}})
+                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team'})
+        print(dev_id_list)
         query = [
             {
                 '$match':
@@ -247,10 +246,11 @@ class TeamRepoMembers(BaseDb):
                 }
             }},
             {'$sort': {'_id.member': 1}},
-            {'$project': {"member": "$_id.member", "_id": 0}}
+            {'$project': {"name": "$_id.member", "_id": 0}}
         ]
         query_result = query_aggregate_to_dictionary(self.db, 'Dev', query)
-        query_result = sorted(query_result, key=lambda x: x['member'].lower(), reverse=False)
+        query_result = sorted(query_result, key=lambda x: x['name'].lower(), reverse=False)
+        print(query_result)
         return jsonify(query_result)
 
 
