@@ -1,8 +1,14 @@
-from flask import jsonify
+import datetime as dt
+import json
+from operator import itemgetter
+
+from flask import jsonify, request
+
 from app.common.client import *
-from app.common.module import *
-from app.common.db import BaseDb
 from app.common.config import since_hour_delta
+from app.common.db import BaseDb
+from app.common.module import utc_time_datetime_format, find_key, name_and_org_regex_search, fill_all_dates, \
+    merge_lists, process_data, accumulator, start_day_string_time, end_date_string_time
 
 
 class CheckWithExist(BaseDb):
@@ -588,7 +594,6 @@ class TeamRepositoriesReadme(BaseDb):
             {'$project': {"repoName": "$repoName", "status": {'$ifNull': ["$readme", "None"]}, "_id": 0}},
         ]
         query_result = query_aggregate_to_dictionary(self.db, "Repo", query)
-        print(query_result)
         query_result = sorted(query_result, key=lambda x: x['repoName'].lower(), reverse=False)
         return jsonify(query_result)
 
@@ -602,19 +607,6 @@ class TeamLastCommits(BaseDb):
         id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team'})
-        # query = [{'$match': {'dev_id': {'$in': dev_id_list}}},
-        #          {'$group': {
-        #              '_id': {
-        #                  'year': {'$year': "$committed_date"},
-        #                  'month': {'$month': "$committed_date"},
-        #                  'day': {'$dayOfMonth': "$committed_date"},
-        #              },
-        #              'count': {'$sum': 1}
-        #          }},
-        #          {'$project': {"_id": 0, "year": "$_id.year", "month": "$_id.month",
-        #                        "day": "$_id.day",
-        #                        'count': 1}}]
-        # count_list = query_aggregate_to_dictionary(self.db, 'Commit', query)
 
         query = {'dev_id': {'$in': dev_id_list}}
         projection = {"_id": 0, "repo_name": 1, "author": 1, "committed_date": 1, 'message_head_line': 1,

@@ -1,8 +1,7 @@
-from flask import jsonify
 from app.common.client import *
-from app.common.module import *
-from app.common.db import BaseDb
 from app.common.config import since_hour_delta
+from app.common.db import BaseDb
+from app.common.module import *
 
 
 class OrgNames(BaseDb):
@@ -299,8 +298,6 @@ class OrgHeaderInfo(BaseDb):
         teams_count = query_count(self.db, 'Teams', query_teams_count)
         user_count = query_count(self.db, 'Dev', query_users_count)
         commits_count = query_count(self.db, 'Commit', query_commits_count)
-        print({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
-               'avgCommits': commits_count})
         if query_repository_count and query_teams_count and query_users_count and query_commits_count:
             return jsonify({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
                             'avgCommits': commits_count})

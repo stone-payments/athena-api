@@ -1,7 +1,13 @@
-from flask import jsonify
-from app.common.client import *
-from app.common.module import *
+import datetime as dt
+import json
+from operator import itemgetter
+
+from flask import request, jsonify
+
+from app.common.client import query_aggregate_to_dictionary, query_last_document_limit_2
 from app.common.db import BaseDb
+from app.common.module import name_and_org_regex_search, start_day_string_time, end_date_string_time, fill_all_dates, \
+    process_data, accumulator
 
 
 class RepoName(BaseDb):
@@ -64,18 +70,6 @@ class RepoMembers(BaseDb):
         org = request.args.get("org")
         start_date = start_day_string_time()
         end_date = end_date_string_time()
-        total_commits = [{'$match': {'committed_date': {'$gte': start_date, '$lt': end_date},
-                                     'repo_name': name, 'org': org}},
-                 {'$group': {
-                     '_id': {
-                         'repo_name': "$repo_name",
-                     },
-                     'total': {'$sum': 1}
-                 }},
-                 {'$sort': {'_id.repo_name': -1}},
-                 {'$project': {'_id': 0,  "repo_name": "$_id.repo_name", 'total': 1}},
-                 ]
-        total_commits_count = query_aggregate_to_dictionary(self.db, 'Commit', total_commits)
         user_commits = [{'$match': {'committed_date': {'$gte': start_date, '$lt': end_date}, 'repo_name': name,
                                     'org': org}},
                  {'$group': {
@@ -145,7 +139,6 @@ class RepoIssues(BaseDb):
                                       'count': 1}}
                         ]
         created_issues_list = process_data(self.db, 'Issue', query_created, delta, start_date)
-        print(created_issues_list)
         created_issues_list = accumulator(created_issues_list)
         closed_issues_list = process_data(self.db, 'Issue', query_closed, delta, start_date)
         closed_issues_list = accumulator(closed_issues_list)
