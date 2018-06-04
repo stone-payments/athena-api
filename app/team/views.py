@@ -232,10 +232,8 @@ class TeamRepoMembers(BaseDb):
         id_team = query_find_to_dictionary(self.db, 'Teams',
                                            {'slug': name, 'org': org},
                                            {'_id': '_id'})
-        print(id_team)
         dev_id_list = query_find_to_dictionary_distinct(self.db, 'edges', 'from',
                                                         {'to': id_team[0]['_id'], "type": 'dev_to_team'})
-        print(dev_id_list)
         query = [
             {
                 '$match':
@@ -250,7 +248,6 @@ class TeamRepoMembers(BaseDb):
         ]
         query_result = query_aggregate_to_dictionary(self.db, 'Dev', query)
         query_result = sorted(query_result, key=lambda x: x['name'].lower(), reverse=False)
-        print(query_result)
         return jsonify(query_result)
 
 
