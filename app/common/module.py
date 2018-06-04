@@ -1,10 +1,11 @@
 import datetime as dt
-import re
 import json
-from flask import request, jsonify
+import re
 import threading
-from queue import Queue
 from operator import itemgetter
+from queue import Queue
+
+from flask import request, jsonify
 
 
 def utc_time_datetime_format(since_time_delta):

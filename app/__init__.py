@@ -1,7 +1,5 @@
 from flask import Flask
 from instance.config import app_config
-from app.common.mongo import Mongraph
-from app.common.config import *
 
 
 def create_app(config_name):
