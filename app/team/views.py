@@ -617,3 +617,19 @@ class TeamLastCommits(BaseDb):
             org_last_commit['day'] = org_last_commit['committed_date'].strftime('%d')
             org_last_commit['month'] = org_last_commit['committed_date'].strftime('%b')
         return jsonify(org_last_commit_list)
+
+
+class TeamHeaderInfo(BaseDb):
+
+    def get(self):
+        name = request.args.get("name")
+        org = request.args.get("org")
+        id_team = query_find_to_dictionary(self.db, 'Teams', {'slug': name, 'org': org}, {'_id': '_id'})
+        members_count = len(query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+                                                        {'to': id_team[0]['_id'], "type": 'dev_to_team'}))
+        repositories_count = len(query_find_to_dictionary_distinct(self.db, 'edges', 'from',
+        return jsonify({'members': members_count, 'repositories': repositories_count})
+        # if query_repository_count and query_teams_count and query_users_count and query_commits_count:
+        #     return jsonify({'users': user_count, 'teams': teams_count, 'repositories': repository_count,
+        #                     'avgCommits': commits_count})
+        # return jsonify({'users': 0, 'teams': 0, 'repositories': 0, 'avgCommits': 0})

@@ -13,7 +13,7 @@ def create_app(config_name):
         UserStats, UserLogin, UserTeam, UserNewWork, UserLastCommits, UserWorkedRepository
     from app.team.views import CheckWithExist, TeamCommits, TeamIssues, TeamLanguages, TeamLicense,\
         TeamName, TeamNewWork, TeamOpenSource, TeamReadme, TeamRepoMembers, ReportConsolidateReadme, ReportReadme,\
-        ReportRepositoryInfo, TeamReadmeLanguages, TeamRepositoriesReadme, TeamLastCommits
+        ReportRepositoryInfo, TeamReadmeLanguages, TeamRepositoriesReadme, TeamLastCommits, TeamHeaderInfo
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
@@ -80,6 +80,8 @@ def create_app(config_name):
                      view_func=TeamRepositoriesReadme.as_view('team_repositories_readme'), methods=['GET'])
     app.add_url_rule('/team_last_commits',
                      view_func=TeamLastCommits.as_view('team_last_commits'), methods=['GET'])
+    app.add_url_rule('/team_header_info',
+                     view_func=TeamHeaderInfo.as_view('team_header_info'), methods=['GET'])
 
     return app
 
